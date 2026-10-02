@@ -1,0 +1,13 @@
+{
+  "buildCommand": "npm install",
+  "outputDirectory": "public",
+  "functions": {
+    "api/**/*.js": {
+      "runtime": "nodejs24.x"
+    }
+  },
+  "env": {
+    "DATABASE_URL": "@DATABASE_URL",
+    "POSTGRES_URL": "@POSTGRES_URL"
+  }
+}
