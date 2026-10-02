@@ -375,46 +375,68 @@ function localStorageAvailable(){
     return true;
   }catch(e){ return false; }
 }
+/* ============ CLOUD SYNC (Neon via /api/data) + local cache ============ */
+const API = '/api/data';
+function lsGet(key){ try{ const r = localStorage.getItem('baitalnoor:'+key); return r ? JSON.parse(r) : null; }catch(e){ return null; } }
+function lsSet(key, v){ try{ localStorage.setItem('baitalnoor:'+key, JSON.stringify(v)); }catch(e){} }
+function getAppKey(force){
+  let k = null; try{ k = localStorage.getItem('baitalnoor:appkey'); }catch(e){}
+  if(!k || force){
+    k = (window.prompt(force ? 'Wrong passcode. Enter the sync passcode:' : 'Enter the sync passcode (once per device):') || '').trim();
+    try{ localStorage.setItem('baitalnoor:appkey', k); }catch(e){}
+  }
+  return k;
+}
+async function apiCall(method, key, value, retried){
+  const opts = { method, cache:'no-store', headers:{ 'x-app-key': getAppKey(false) } };
+  let url = API;
+  if(method === 'GET'){ url += '?key=' + encodeURIComponent(key); }
+  else { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify({ key, value }); }
+  const r = await fetch(url, opts);
+  if(r.status === 401 && !retried){ getAppKey(true); return apiCall(method, key, value, true); }
+  if(!r.ok) throw new Error('HTTP ' + r.status);
+  return r.json();
+}
+function markPending(key, on){
+  let p = []; try{ p = JSON.parse(localStorage.getItem('baitalnoor:pending') || '[]'); }catch(e){}
+  p = p.filter(k => k !== key); if(on) p.push(key);
+  try{ localStorage.setItem('baitalnoor:pending', JSON.stringify(p)); }catch(e){}
+}
+async function flushPending(){
+  let p = []; try{ p = JSON.parse(localStorage.getItem('baitalnoor:pending') || '[]'); }catch(e){}
+  for(const key of p){
+    const v = lsGet(key);
+    if(v === null){ markPending(key, false); continue; }
+    try{ await apiCall('PUT', key, v); markPending(key, false); }catch(e){}
+  }
+}
+window.addEventListener('online', flushPending);
+
 async function storeGet(key, fallback){
-  if(typeof window.storage !== 'undefined'){
-    try{
-      const r = await window.storage.get(key, false);
-      return r ? JSON.parse(r.value) : fallback;
-    }catch(e){
-      // A missing key legitimately throws — this is normal on first run, not a real failure.
-      return fallback;
+  try{
+    await flushPending();                       // push any offline edits first
+    const res = await apiCall('GET', key);
+    if(res && res.value !== null && res.value !== undefined){
+      lsSet(key, res.value);                    // cloud is the source of truth
+      return res.value;
     }
+    const local = lsGet(key);                   // cloud empty: migrate this device's data up
+    if(local !== null){ try{ await apiCall('PUT', key, local); }catch(e){ markPending(key, true); } return local; }
+    return fallback;
+  }catch(e){
+    warnStorageOnce('Offline — showing the copy saved on this device. Changes will sync when you are back online.');
+    const local = lsGet(key);
+    return local !== null ? local : fallback;
   }
-  if(localStorageAvailable()){
-    try{
-      const raw = window.localStorage.getItem('baitalnoor:'+key);
-      return raw ? JSON.parse(raw) : fallback;
-    }catch(e){ return fallback; }
-  }
-  warnStorageOnce('Persistent storage is unavailable in this environment — the app will run on temporary memory for this session only.');
-  return fallback;
 }
 async function storeSet(key, value){
-  if(typeof window.storage !== 'undefined'){
-    try{
-      await window.storage.set(key, JSON.stringify(value), false);
-      return true;
-    }catch(e){
-      warnStorageOnce('Some data could not be saved permanently in this session.');
-      return false;
-    }
+  lsSet(key, value);                            // instant local save
+  try{ await apiCall('PUT', key, value); markPending(key, false); return true; }
+  catch(e){
+    markPending(key, true);
+    warnStorageOnce('Saved on this device — will sync to the cloud when the connection returns.');
+    return false;
   }
-  if(localStorageAvailable()){
-    try{
-      window.localStorage.setItem('baitalnoor:'+key, JSON.stringify(value));
-      return true;
-    }catch(e){
-      warnStorageOnce('Some data could not be saved permanently in this session (storage may be full).');
-      return false;
-    }
-  }
-  warnStorageOnce('Persistent storage is unavailable in this environment — the app will run on temporary memory for this session only.');
-  return false;
 }
 
 /* ============ DEFAULT / SEED DATA ============ */
