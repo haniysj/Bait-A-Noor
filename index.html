@@ -308,6 +308,90 @@ input:focus, select:focus, textarea:focus{outline:none; border-color:var(--amber
 .muted{color:var(--sand-dim);}
 .fab-space{height:6px;}
 ::-webkit-scrollbar{width:0;height:0;}
+
+/* ================= TABLET (700px+) ================= */
+@media (min-width:700px){
+  #app{max-width:820px;}
+  nav.tabbar{max-width:820px;}
+  #view-home > .kpi-grid{grid-template-columns:repeat(4,1fr);}
+  #view-cars.active{display:grid; grid-template-columns:1fr 1fr; gap:0 14px; align-items:start;}
+  #view-cars > .car-card.open, #view-cars > .btn, #view-cars > .fab-space{grid-column:1 / -1;}
+  .overlay{align-items:center; padding:24px;}
+  .sheet{border-radius:24px; max-width:520px; max-height:86vh; padding:24px 26px 26px; animation:popIn .22s ease;}
+  .sheet-handle{display:none;}
+  .chart-wrap{height:230px;}
+  .year-chip-row{flex-wrap:wrap; overflow:visible;}
+}
+@keyframes popIn{from{transform:scale(.96); opacity:0;} to{transform:scale(1); opacity:1;}}
+
+/* ================= DESKTOP (1024px+): sidebar layout ================= */
+@media (min-width:1024px){
+  #app{
+    max-width:1280px; display:grid;
+    grid-template-columns:232px minmax(0,1fr);
+    grid-template-rows:auto 1fr;
+    grid-template-areas:"nav header" "nav main";
+  }
+  header.top{grid-area:header; padding:30px 36px 18px;}
+  header.top::after{left:36px; right:36px;}
+  .brand-title{font-size:36px;}
+  main{grid-area:main; padding:18px 36px 48px;}
+
+  nav.tabbar{
+    grid-area:nav; position:sticky; top:0; bottom:auto; left:auto; right:auto;
+    height:100vh; max-width:none; margin:0;
+    flex-direction:column; justify-content:flex-start; gap:6px;
+    padding:112px 16px 24px; border-top:none; border-right:1px solid var(--line);
+    background:transparent;
+  }
+  nav.tabbar button{
+    flex-direction:row; justify-content:flex-start; gap:12px; width:100%;
+    font-size:15px; font-weight:600; padding:12px 16px; cursor:pointer;
+  }
+  nav.tabbar button:hover:not(.active){background:rgba(224,164,88,0.06); color:var(--sand);}
+  nav.tabbar button:hover:not(.active) svg{stroke:var(--sand);}
+
+  /* Home: KPIs across the top, chart + activity side by side */
+  #view-home.active{display:grid; grid-template-columns:1.6fr 1fr; gap:0 18px; align-items:start;}
+  #view-home > .kpi-grid{grid-column:1 / -1; gap:14px; margin-bottom:18px;}
+  .kpi{padding:16px 18px;}
+  .kpi .label{font-size:12.5px;}
+  .kpi .value{font-size:25px;}
+
+  /* Bills: categories + chart side by side, monthly log full width */
+  #view-bills.active{display:grid; grid-template-columns:1fr 1.4fr; gap:0 18px; align-items:start;}
+  #view-bills > .year-chip-row,
+  #view-bills > .card:not(:has(.chart-wrap)):not(:has(.kpi-grid)),
+  #view-bills > .fab-space{grid-column:1 / -1;}
+  #view-bills > .btn{grid-column:1 / -1; justify-self:start; width:auto; min-width:260px;}
+  .entry-row{padding:13px 4px; border-radius:10px;}
+  [data-edit-month]{cursor:pointer;}
+  [data-edit-month]:hover{background:rgba(224,164,88,0.05);}
+
+  /* Cars: card grid; open card spans full width */
+  #view-cars.active{gap:0 18px;}
+  #view-cars > .btn{justify-self:start; width:auto; min-width:260px;}
+
+  .card{padding:20px 22px; margin-bottom:18px;}
+  .chart-wrap{height:270px;}
+  .section-title{font-size:24px;}
+}
+
+/* ================= Mouse / pointer niceties ================= */
+@media (hover:hover) and (pointer:fine){
+  .btn, .year-chip, .segmented button, .settings-btn, .car-head{cursor:pointer;}
+  .btn{transition:filter .15s, transform .15s;}
+  .btn:hover{filter:brightness(1.08); transform:translateY(-1px);}
+  .btn.ghost:hover{border-color:var(--amber); filter:none;}
+  .settings-btn:hover{border-color:var(--amber); color:var(--amber-2);}
+  .year-chip:hover:not(.active){border-color:var(--amber); color:var(--sand);}
+  .car-card{transition:border-color .2s;}
+  .car-card:hover{border-color:rgba(224,164,88,0.45);}
+  ::-webkit-scrollbar{width:9px; height:9px;}
+  ::-webkit-scrollbar-thumb{background:var(--line); border-radius:9px;}
+  ::-webkit-scrollbar-thumb:hover{background:var(--sand-dim);}
+  .year-chip-row::-webkit-scrollbar{display:none;}
+}
 </style>
 </head>
 <body>
