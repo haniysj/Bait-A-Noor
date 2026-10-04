@@ -233,6 +233,12 @@ input:focus, select:focus, textarea:focus{outline:none; border-color:var(--amber
 .meta-chip{display:flex; flex-direction:column;}
 .meta-chip-top{font-size:13.5px; font-weight:600; display:flex; align-items:center; gap:3px;}
 .meta-chip-date{font-size:11.5px; color:var(--sand-dim); margin-top:1px;}
+/* Monthly log: fixed slot per bill (Elec | Water | Wi-Fi | Mobile); missing bill = empty slot */
+.log-main{flex:1; min-width:0; margin-right:12px;}
+.log-main + div{flex:0 0 104px; justify-content:flex-end;}
+.meta-chips.fixed{display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:8px 8px;}
+.meta-chips.fixed .meta-chip{min-width:0; white-space:nowrap;}
+@media (min-width:1024px){ .meta-chips.fixed{max-width:560px; gap:8px 18px;} }
 .entry-row .amt{font-family:'Cairo'; font-weight:700; color:var(--amber-2); font-size:16px;}
 .money{display:inline-flex; align-items:center; gap:4px; direction:ltr;}
 .money-num{font-variant-numeric:tabular-nums;}
@@ -962,13 +968,13 @@ function renderBills(){
         const rec = yearData[m];
         const rowTotal = CATS.reduce((s,c)=>s+(Number(rec[c.key])||0),0);
         return `<div class="entry-row" data-edit-month="${m}">
-          <div>
+          <div class="log-main">
             <div>${MONTHS_AR[m]}</div>
-            <div class="meta-chips">${CATS.map(c=> rec[c.key]!=null? `
+            <div class="meta-chips fixed">${CATS.map(c=> rec[c.key]!=null? `
               <div class="meta-chip">
                 <div class="meta-chip-top" style="color:${c.color}">${icon(c.icon,11)} ${fmtShort(rec[c.key])}</div>
                 ${rec[c.key+'Date']? `<div class="meta-chip-date">${formatShortDate(rec[c.key+'Date'])}</div>` : ''}
-              </div>` : '').filter(Boolean).join('')}</div>
+              </div>` : `<div class="meta-chip empty" aria-label="${c.label}: not entered"></div>`).join('')}</div>
           </div>
           <div style="display:flex; align-items:center; gap:8px;">
             <div class="amt">${money(rowTotal)}</div>
