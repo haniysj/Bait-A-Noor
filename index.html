@@ -276,7 +276,21 @@ input:focus, select:focus, textarea:focus{outline:none; border-color:var(--amber
 .flag{font-size:10.5px; padding:4px 9px; border-radius:20px; font-weight:700; display:flex; align-items:center; gap:4px;}
 .flag.ok{background:rgba(127,194,155,0.15); color:var(--good);}
 .flag.warn{background:rgba(217,119,87,0.18); color:var(--terracotta);}
-.car-title-wrap{display:inline-flex; align-items:center; gap:2px; white-space:nowrap;}
+.car-head{align-items:flex-start !important; gap:12px;}
+.car-head-main{flex:1; min-width:0;}
+.car-head-side{display:flex; flex-direction:column; align-items:center; gap:10px; flex-shrink:0;}
+.car-head-side .car-edit-btn{padding:4px; opacity:.8;}
+.car-info-row{display:flex; gap:6px; flex-wrap:wrap; margin-top:7px;}
+.car-flags{margin-top:7px !important;}
+.car-badge{
+  flex-shrink:0; width:42px; height:42px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-family:'Cairo'; font-weight:800; font-size:11.5px; letter-spacing:.5px;
+  color:hsl(var(--bh) 70% 82%);
+  background:radial-gradient(circle at 30% 25%, hsl(var(--bh) 35% 32%), hsl(var(--bh) 30% 16%));
+  border:1.5px solid hsl(var(--bh) 45% 55% / .55);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08), 0 3px 8px rgba(0,0,0,.25);
+}
 .car-info{
   display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:700;
   background:var(--bg-2); border:1px solid var(--line); color:var(--sand-dim);
@@ -1194,6 +1208,25 @@ function renderCars(){
   }
 }
 
+/* Auto brand badge from car name (text emblem, not official logos) */
+const BRANDS = [
+  ['mercedes','Mercedes-Benz','MER'],['benz','Mercedes-Benz','MER'],['lexus','Lexus','LEX'],['toyota','Toyota','TOY'],
+  ['camry','Toyota','TOY'],['land cruiser','Toyota','TOY'],['prado','Toyota','TOY'],['nissan','Nissan','NIS'],['patrol','Nissan','NIS'],
+  ['audi','Audi','AUD'],['bmw','BMW','BMW'],['volkswagen','Volkswagen','VW'],['vw ','Volkswagen','VW'],['honda','Honda','HON'],
+  ['hyundai','Hyundai','HYU'],['kia','Kia','KIA'],['mazda','Mazda','MAZ'],['mitsubishi','Mitsubishi','MIT'],['ford','Ford','FRD'],
+  ['chevrolet','Chevrolet','CHV'],['gmc','GMC','GMC'],['jeep','Jeep','JEP'],['land rover','Land Rover','LR'],['range rover','Land Rover','LR'],
+  ['porsche','Porsche','POR'],['infiniti','Infiniti','INF'],['dodge','Dodge','DOD'],['suzuki','Suzuki','SUZ'],['isuzu','Isuzu','ISZ'],
+  ['mg ','MG','MG'],['geely','Geely','GLY'],['chery','Chery','CHY'],['tesla','Tesla','TSL'],['volvo','Volvo','VOL'],['subaru','Subaru','SUB']
+];
+function brandOf(name){
+  const n = ' '+String(name||'').toLowerCase()+' ';
+  const hit = BRANDS.find(([k])=> n.includes(k.trim()===k? k : ' '+k.trim()+' ') || n.includes(' '+k));
+  const label = hit? hit[1] : (String(name||'').trim().split(/\s+/)[0] || 'Car');
+  const abbr = hit? hit[2] : label.slice(0,3).toUpperCase();
+  const HUES=[35,175,12,268,205,335,90,48,225,150];
+  let s=0; for(const ch of label) s=(s*31+ch.charCodeAt(0))>>>0;
+  return {name:label, abbr, hue:HUES[s%HUES.length]};
+}
 function renderCarCard(car){
   const ins = latestByDate(car.insurance);
   const svc = latestByDate(car.service);
@@ -1219,17 +1252,23 @@ function renderCarCard(car){
   return `
   <div class="card car-card ${isOpen?'open':''} ${car.sold?'sold':''}" id="car-${car.id}">
     <div class="car-head">
-      <div>
+      <div class="car-badge" style="--bh:${brandOf(car.name).hue}" title="${esc(brandOf(car.name).name)}">${brandOf(car.name).abbr}</div>
+      <div class="car-head-main">
         <div class="car-name-row">
-          <span class="car-title-wrap"><span class="car-title">${esc(car.name)}</span><button class="car-edit-btn" data-editcar="${car.id}" title="Edit car details">${icon('pencil',15)}</button></span>
+          <span class="car-title">${esc(car.name)}</span>
           ${car.plate? `<span class="car-plate">${esc(car.plate)}</span>` : ''}
+          ${car.sold? `<span class="sold-badge">${icon('archiveBox',11)} Sold</span>` : ''}
+        </div>
+        <div class="car-info-row">
           <span class="car-info ${car.tireSize?'':'empty'}" title="Tyre size">${icon('tire',12)} ${car.tireSize? esc(car.tireSize) : 'Tyre size'}</span>
           <span class="car-info ${car.oil?'':'empty'}" title="Engine oil">${icon('oil',12)} ${car.oil? esc(car.oil) : 'Engine oil'}</span>
-          ${car.sold? `<span class="sold-badge">${icon('archiveBox',11)} Sold</span>` : ''}
         </div>
         <div class="car-flags">${flags}</div>
       </div>
-      <svg class="chev" viewBox="0 0 24 24" width="20" height="20" stroke="#c9c0ae" stroke-width="2" fill="none"><path d="M6 9l6 6 6-6"/></svg>
+      <div class="car-head-side">
+        <button class="car-edit-btn" data-editcar="${car.id}" title="Edit car details">${icon('pencil',16)}</button>
+        <svg class="chev" viewBox="0 0 24 24" width="20" height="20" stroke="#c9c0ae" stroke-width="2" fill="none"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
     </div>
     <div class="car-detail"><div class="car-detail-inner">
       ${renderCarDetailBody(car)}
