@@ -986,14 +986,16 @@ function drawHomeYearly(ctx){
   const datasets = CATS.map(c=>({
     label:c.label,
     data:years.map(y=> Math.round(sumCat(y,c.key)*1000)/1000),
-    backgroundColor:c.color+'cc', borderColor:c.color, borderWidth:1, borderRadius:4, stack:'t'
+    borderColor:c.color, backgroundColor:c.color+'33',
+    tension:0.35, fill:false, pointRadius:3, pointHoverRadius:5, borderWidth:2
   }));
   if(homeChart) homeChart.destroy();
   homeChart = new Chart(ctx, {
-    type:'bar',
+    type:'line',
     data:{labels:years, datasets},
     options:{
       responsive:true, maintainAspectRatio:false,
+      interaction:{mode:'index', intersect:false},
       plugins:{
         legend:{labels:{color:'#c9c0ae', font:{family:'Tajawal', size:9}, boxWidth:8, boxHeight:8, padding:7, usePointStyle:true, pointStyle:'circle'}},
         tooltip:{mode:'index', intersect:false, callbacks:{
@@ -1002,8 +1004,8 @@ function drawHomeYearly(ctx){
         }}
       },
       scales:{
-        x:{stacked:true, ticks:{color:'#c9c0ae', font:{size:10}}, grid:{display:false}},
-        y:{stacked:true, ticks:{color:'#c9c0ae', font:{size:10}}, grid:{color:'#2b4a4644'}}
+        x:{ticks:{color:'#c9c0ae', font:{size:10}}, grid:{color:'#2b4a4622'}},
+        y:{ticks:{color:'#c9c0ae', font:{size:10}}, grid:{color:'#2b4a4644'}}
       }
     }
   });
