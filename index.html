@@ -276,6 +276,18 @@ input:focus, select:focus, textarea:focus{outline:none; border-color:var(--amber
 .flag{font-size:10.5px; padding:4px 9px; border-radius:20px; font-weight:700; display:flex; align-items:center; gap:4px;}
 .flag.ok{background:rgba(127,194,155,0.15); color:var(--good);}
 .flag.warn{background:rgba(217,119,87,0.18); color:var(--terracotta);}
+.car-title-wrap{display:inline-flex; align-items:center; gap:2px; white-space:nowrap;}
+.car-info{
+  display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:700;
+  background:var(--bg-2); border:1px solid var(--line); color:var(--sand-dim);
+  padding:3px 8px; border-radius:8px; font-family:'Cairo'; white-space:nowrap;
+}
+.car-info svg{stroke:var(--amber); opacity:.9;}
+.car-info.empty{border-style:dashed; opacity:.6; font-weight:600;}
+.entry-row.editable{cursor:pointer; transition:background .15s;}
+.entry-row.editable:active{background:rgba(224,164,88,0.06);}
+.entry-row .edit-hint{color:var(--sand-dim); opacity:.55; display:flex;}
+@media (hover:hover) and (pointer:fine){ .entry-row.editable:hover{background:rgba(224,164,88,0.06);} .entry-row.editable:hover .edit-hint{opacity:1; color:var(--amber-2);} }
 .chev{transition:transform .25s;}
 .car-card.open .chev{transform:rotate(180deg);}
 .car-detail{max-height:0; overflow:hidden; transition:max-height .35s ease;}
@@ -549,6 +561,7 @@ const ICON_PATHS = {
   tire: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="3" x2="12" y2="7"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="3" y1="12" x2="7" y2="12"/><line x1="17" y1="12" x2="21" y2="12"/>',
   battery: '<rect x="2" y="8" width="17" height="8" rx="1.5"/><line x1="21" y1="10.5" x2="21" y2="13.5"/><line x1="6" y1="10.5" x2="6" y2="13.5"/><line x1="9.5" y1="10.5" x2="9.5" y2="13.5"/>',
   wallet: '<path d="M3 7a2 2 0 0 1 2-2h13a1 1 0 0 1 1 1v2"/><path d="M3 7v11a2 2 0 0 0 2 2h14a1 1 0 0 0 1-1v-6a1 1 0 0 0-1-1h-4a2 2 0 1 0 0 4h5"/>',
+  oil: '<path d="M3 10h9l2 3h4l3-3v8a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-8Z"/><path d="M7 10V7h4v3"/><path d="M6 7h6"/>',
   pencil: '<path d="M4 20h4l10.5-10.5a2.121 2.121 0 0 0-3-3L5 17v3Z"/><path d="M13.5 6.5l3 3"/>',
   car: '<path d="M3 13l1.5-4.5A2 2 0 0 1 6.4 7h11.2a2 2 0 0 1 1.9 1.5L21 13"/><rect x="3" y="13" width="18" height="6" rx="2"/><circle cx="7.5" cy="19" r="1.4"/><circle cx="16.5" cy="19" r="1.4"/>',
   trend: '<path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
@@ -637,6 +650,7 @@ function fmtShort(n){
   return Number(n).toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1});
 }
 function todayISO(){ return new Date().toISOString().slice(0,10); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function daysBetween(a,b){ return Math.round((new Date(b)-new Date(a))/86400000); }
 /* Numeric dd/mm/yyyy — used for the custom overlay shown on native date inputs */
 function formatDMY(iso){
@@ -1185,9 +1199,12 @@ function renderCarCard(car){
   const svc = latestByDate(car.service);
   const tire = latestByDate(car.tires);
   let flags = '';
-  if(ins && ins.expiry){
-    const d = daysBetween(todayISO(), ins.expiry);
-    flags += `<span class="flag ${d<30?'warn':'ok'}">${icon('shield',12)} Insurance ${d<0? 'expired' : d+' days'}</span>`;
+  const insWithExpiry = [...(car.insurance||[])].filter(x=>x.expiry).sort((a,b)=> new Date(b.expiry)-new Date(a.expiry))[0];
+  if(insWithExpiry){
+    const d = daysBetween(todayISO(), insWithExpiry.expiry);
+    flags += `<span class="flag ${d<30?'warn':'ok'}" title="${d<0? 'Expired' : d+' days left'}">${icon('shield',12)} ${d<0? 'Insurance expired' : 'Insurance until'}: ${formatDMY(insWithExpiry.expiry)}</span>`;
+  } else if(ins){
+    flags += `<span class="flag warn">${icon('shield',12)} Insurance: no expiry date</span>`;
   } else {
     flags += `<span class="flag warn">${icon('shield',12)} No insurance on file</span>`;
   }
@@ -1204,10 +1221,11 @@ function renderCarCard(car){
     <div class="car-head">
       <div>
         <div class="car-name-row">
-          <span class="car-title">${car.name}</span>
-          ${car.plate? `<span class="car-plate">${car.plate}</span>` : ''}
+          <span class="car-title-wrap"><span class="car-title">${esc(car.name)}</span><button class="car-edit-btn" data-editcar="${car.id}" title="Edit car details">${icon('pencil',15)}</button></span>
+          ${car.plate? `<span class="car-plate">${esc(car.plate)}</span>` : ''}
+          <span class="car-info ${car.tireSize?'':'empty'}" title="Tyre size">${icon('tire',12)} ${car.tireSize? esc(car.tireSize) : 'Tyre size'}</span>
+          <span class="car-info ${car.oil?'':'empty'}" title="Engine oil">${icon('oil',12)} ${car.oil? esc(car.oil) : 'Engine oil'}</span>
           ${car.sold? `<span class="sold-badge">${icon('archiveBox',11)} Sold</span>` : ''}
-          <button class="car-edit-btn" data-editcar="${car.id}" title="Edit">${icon('pencil',15)}</button>
         </div>
         <div class="car-flags">${flags}</div>
       </div>
@@ -1251,16 +1269,18 @@ function renderCarSubtabList(car, type){
   if(!items.length) return `<div class="empty-msg">${icon('archiveBox',22)}No records yet</div>`;
   return items.map(it=>{
     let title='', meta='';
-    if(type==='service'){ title = it.type || 'Service'; meta = `${it.date}${it.km? ' · '+Number(it.km).toLocaleString()+' km':''}${it.notes? ' · '+it.notes:''}`; }
-    if(type==='insurance'){ title = it.company || 'Insurance'; meta = `From ${it.date}${it.expiry? ' to '+it.expiry:''}`; }
-    if(type==='tires'){ title = it.type || 'Tires'; meta = `${it.date}${it.km? ' · '+Number(it.km).toLocaleString()+' km':''}`; }
-    if(type==='battery'){ title = it.type || 'Battery'; meta = `${it.date}${it.place? ' · '+it.place:''}`; }
-    if(type==='expenses'){ title = it.item || 'Expense'; meta = `${it.date}${it.notes? ' · '+it.notes:''}`; }
-    return `<div class="entry-row">
-      <div><div>${title}</div><div class="meta">${meta}</div></div>
+    const D = formatDMY(it.date);
+    if(type==='service'){ title = it.type || 'Service'; meta = `${D}${it.km? ' · '+Number(it.km).toLocaleString()+' km':''}${it.notes? ' · '+it.notes:''}`; }
+    if(type==='insurance'){ title = it.company || 'Insurance'; meta = `From ${D}${it.expiry? ' to '+formatDMY(it.expiry):''}`; }
+    if(type==='tires'){ title = it.type || 'Tires'; meta = `${D}${it.km? ' · '+Number(it.km).toLocaleString()+' km':''}`; }
+    if(type==='battery'){ title = it.type || 'Battery'; meta = `${D}${it.place? ' · '+it.place:''}`; }
+    if(type==='expenses'){ title = it.item || 'Expense'; meta = `${D}${it.notes? ' · '+it.notes:''}`; }
+    return `<div class="entry-row editable" data-edititem="${car.id}|${type}|${it.id}" title="Tap to edit">
+      <div><div>${esc(title)}</div><div class="meta">${esc(meta)}</div></div>
       <div style="display:flex; align-items:center; gap:8px;">
         <div class="amt">${it.cost!=null? money(it.cost) : ''}</div>
-        <button class="del" data-delitem="${car.id}|${type}|${it.id}">${icon('close',13)}</button>
+        <span class="edit-hint">${icon('pencil',13)}</span>
+        <button class="del" data-delitem="${car.id}|${type}|${it.id}" title="Delete">${icon('close',13)}</button>
       </div>
     </div>`;
   }).join('');
@@ -1282,9 +1302,20 @@ function bindCarDetail(carId){
       openCarItemSheet(carId, type, null);
     });
   });
+  document.querySelectorAll(`[data-edititem^="${carId}|"]`).forEach(row=>{
+    row.addEventListener('click', (e)=>{
+      if(e.target.closest('.del')) return;
+      e.stopPropagation();
+      const [cid, type, id] = row.dataset.edititem.split('|');
+      const c = CARS.find(x=>x.id===cid);
+      const existing = (c && c[type]||[]).find(x=>x.id===id);
+      if(existing) openCarItemSheet(cid, type, existing);
+    });
+  });
   document.querySelectorAll(`[data-delitem^="${carId}|"]`).forEach(btn=>{
     btn.addEventListener('click', async (e)=>{
       e.stopPropagation();
+      if(!confirm('Delete this record?')) return;
       const [cid, type, id] = btn.dataset.delitem.split('|');
       const c = CARS.find(x=>x.id===cid);
       c[type] = c[type].filter(x=>x.id!==id);
@@ -1359,12 +1390,19 @@ function openCarItemSheet(carId, type, existing){
     `;
   }
   openSheet(`
-    <h3>${icon(tabInfo.icon,18)} Add — ${tabInfo.label} · ${car.name}</h3>
+    <h3>${icon(tabInfo.icon,18)} ${existing? 'Edit' : 'Add'} — ${tabInfo.label} · ${esc(car.name)}</h3>
     ${fields}
     <div class="field-hint">Saves automatically</div>
     <div class="actions"><button class="btn block" id="doneItemBtn">Done</button></div>
   `);
 
+  if(existing){
+    const setv = (id, v)=>{ const el=document.getElementById(id); if(el && v!=null) el.value = v; };
+    setv('i-date', existing.date); setv('i-expiry', existing.expiry);
+    setv('i-type', existing.type); setv('i-km', existing.km); setv('i-cost', existing.cost);
+    setv('i-notes', existing.notes); setv('i-company', existing.company);
+    setv('i-place', existing.place); setv('i-item', existing.item);
+  }
   ['i-date','i-expiry'].forEach(id=>{ if(document.getElementById(id)) syncDateDisplay(id); });
 
   const val = (id)=>{ const el=document.getElementById(id); return el? el.value : ''; };
@@ -1405,7 +1443,7 @@ function openCarItemSheet(carId, type, existing){
     return item;
   }
 
-  let itemId = null;
+  let itemId = existing? existing.id : null;
   function persist(){
     if(!isMeaningful()) return;
     const item = collect();
@@ -1518,6 +1556,10 @@ function openEditCarSheet(carId){
     <h3>${icon('pencil',18)} Edit car</h3>
     <label>Car name</label><input id="ec-name" value="${car.name.replace(/"/g,'&quot;')}">
     <label>Plate number</label><input id="ec-plate" value="${(car.plate||'').replace(/"/g,'&quot;')}" placeholder="e.g. 1234 AB">
+    <div class="row2">
+      <div><label>Tyre size</label><input id="ec-tire" value="${(car.tireSize||'').replace(/"/g,'&quot;')}" placeholder="e.g. 265/60 R18"></div>
+      <div><label>Engine oil</label><input id="ec-oil" value="${(car.oil||'').replace(/"/g,'&quot;')}" placeholder="e.g. 5W-30 · 6.5 L"></div>
+    </div>
     <div class="field-hint">Saves automatically</div>
     <div class="actions"><button class="btn block" id="doneEditCarBtn">Done</button></div>
   `);
@@ -1528,13 +1570,14 @@ function openEditCarSheet(carId){
     if(!name) return;
     car.name = name;
     car.plate = plate;
+    car.tireSize = document.getElementById('ec-tire').value.trim();
+    car.oil = document.getElementById('ec-oil').value.trim();
     storeSet('cars', CARS);
     renderCars();
   }
   const debouncedPersist = debounce(persist, 500);
   activeFlush = persist;
-  document.getElementById('ec-name').addEventListener('input', debouncedPersist);
-  document.getElementById('ec-plate').addEventListener('input', debouncedPersist);
+  ['ec-name','ec-plate','ec-tire','ec-oil'].forEach(id=> document.getElementById(id).addEventListener('input', debouncedPersist));
   document.getElementById('doneEditCarBtn').addEventListener('click', closeSheet);
 }
 
