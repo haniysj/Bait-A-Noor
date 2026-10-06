@@ -278,17 +278,17 @@ input:focus, select:focus, textarea:focus{outline:none; border-color:var(--amber
 .flag.warn{background:rgba(217,119,87,0.18); color:var(--terracotta);}
 .car-head{
   display:grid !important; align-items:start !important; column-gap:12px;
-  grid-template-columns:auto minmax(0,1fr) auto;
-  grid-template-areas:"badge main side" "badge info side" "badge flags side";
+  grid-template-columns:minmax(0,1fr) auto;
+  grid-template-areas:"main side" "info side" "flags side";
 }
-.car-head > .car-badge{grid-area:badge;}
 .car-head > .car-head-main{grid-area:main;}
 .car-head > .car-head-side{grid-area:side;}
 .car-head > .car-info-row{grid-area:info;}
 .car-head > .car-flags{grid-area:flags;}
 @media (max-width:560px){
-  .car-head{grid-template-areas:"badge main side" "info info info" "flags flags flags";}
+  .car-head{grid-template-areas:"main side" "info info" "flags flags";}
   .car-head > .car-head-main{align-self:center;}
+  .car-head-side{flex-direction:row !important; gap:6px !important;}
   .car-head > .car-info-row{margin-top:11px;}
 }
 .car-head-main{flex:1; min-width:0;}
@@ -299,15 +299,6 @@ input:focus, select:focus, textarea:focus{outline:none; border-color:var(--amber
 .car-info-row .car-info svg{flex-shrink:0;}
 .ci-t{overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0;}
 .car-flags{margin-top:7px !important;}
-.car-badge{
-  flex-shrink:0; width:42px; height:42px; border-radius:50%;
-  display:flex; align-items:center; justify-content:center;
-  font-family:'Cairo'; font-weight:800; font-size:11.5px; letter-spacing:.5px;
-  color:hsl(var(--bh) 70% 82%);
-  background:radial-gradient(circle at 30% 25%, hsl(var(--bh) 35% 32%), hsl(var(--bh) 30% 16%));
-  border:1.5px solid hsl(var(--bh) 45% 55% / .55);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.08), 0 3px 8px rgba(0,0,0,.25);
-}
 .car-info{
   display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:700;
   background:var(--bg-2); border:1px solid var(--line); color:var(--sand-dim);
@@ -1225,30 +1216,6 @@ function renderCars(){
   }
 }
 
-/* Auto brand badge from car name (text emblem, not official logos) */
-const BRANDS = [
-  ['mercedes','Mercedes-Benz','MER'],['benz','Mercedes-Benz','MER'],['lexus','Lexus','LEX'],['toyota','Toyota','TOY'],
-  ['camry','Toyota','TOY'],['land cruiser','Toyota','TOY'],['prado','Toyota','TOY'],['nissan','Nissan','NIS'],['patrol','Nissan','NIS'],
-  ['audi','Audi','AUD'],['bmw','BMW','BMW'],['volkswagen','Volkswagen','VW'],['vw ','Volkswagen','VW'],['honda','Honda','HON'],
-  ['hyundai','Hyundai','HYU'],['kia','Kia','KIA'],['mazda','Mazda','MAZ'],['mitsubishi','Mitsubishi','MIT'],['ford','Ford','FRD'],
-  ['chevrolet','Chevrolet','CHV'],['gmc','GMC','GMC'],['jeep','Jeep','JEP'],['land rover','Land Rover','LR'],['range rover','Land Rover','LR'],
-  ['porsche','Porsche','POR'],['infiniti','Infiniti','INF'],['dodge','Dodge','DOD'],['suzuki','Suzuki','SUZ'],['isuzu','Isuzu','ISZ'],
-  ['mg ','MG','MG'],['geely','Geely','GLY'],['chery','Chery','CHY'],['tesla','Tesla','TSL'],['volvo','Volvo','VOL'],['subaru','Subaru','SUB']
-];
-function brandList(){ const seen={}; return BRANDS.filter(b=>{ if(seen[b[1]]) return false; seen[b[1]]=1; return true; }).map(b=>({name:b[1], abbr:b[2]})).sort((a,b)=>a.name.localeCompare(b.name)); }
-function brandFor(car){
-  if(car.brand){ const b = BRANDS.find(x=>x[1]===car.brand); if(b) return brandOf(b[0]); }
-  return brandOf(car.name);
-}
-function brandOf(name){
-  const n = ' '+String(name||'').toLowerCase()+' ';
-  const hit = BRANDS.find(([k])=> n.includes(k.trim()===k? k : ' '+k.trim()+' ') || n.includes(' '+k));
-  const label = hit? hit[1] : (String(name||'').trim().split(/\s+/)[0] || 'Car');
-  const abbr = hit? hit[2] : label.slice(0,3).toUpperCase();
-  const HUES=[35,175,12,268,205,335,90,48,225,150];
-  let s=0; for(const ch of label) s=(s*31+ch.charCodeAt(0))>>>0;
-  return {name:label, abbr, hue:HUES[s%HUES.length]};
-}
 function renderCarCard(car){
   const ins = latestByDate(car.insurance);
   const svc = latestByDate(car.service);
@@ -1274,7 +1241,6 @@ function renderCarCard(car){
   return `
   <div class="card car-card ${isOpen?'open':''} ${car.sold?'sold':''}" id="car-${car.id}">
     <div class="car-head">
-      ${(()=>{const b=brandFor(car); return `<div class="car-badge" style="--bh:${b.hue}" title="${esc(b.name)}">${b.abbr}</div>`;})()}
       <div class="car-head-main">
         <div class="car-name-row">
           <span class="car-title">${esc(car.name)}</span>
@@ -1623,11 +1589,6 @@ function openEditCarSheet(carId){
       <div><label>Engine oil</label><input id="ec-oil" value="${(car.oil||'').replace(/"/g,'&quot;')}" placeholder="e.g. 5W-30 · 6.5 L"></div>
     </div>
     <label>Battery (number / type)</label><input id="ec-battery" value="${(car.batteryInfo||'').replace(/"/g,'&quot;')}" placeholder="e.g. 70Ah AGM · DIN 57539">
-    <label>Brand badge</label>
-    <select id="ec-brand">
-      <option value="">Auto (from car name) — ${esc(brandOf(car.name).name)}</option>
-      ${brandList().map(b=>`<option value="${esc(b.name)}" ${car.brand===b.name?'selected':''}>${esc(b.name)} (${b.abbr})</option>`).join('')}
-    </select>
     <div class="field-hint">Saves automatically</div>
     <div class="actions"><button class="btn block" id="doneEditCarBtn">Done</button></div>
   `);
@@ -1641,14 +1602,12 @@ function openEditCarSheet(carId){
     car.tireSize = document.getElementById('ec-tire').value.trim();
     car.oil = document.getElementById('ec-oil').value.trim();
     car.batteryInfo = document.getElementById('ec-battery').value.trim();
-    car.brand = document.getElementById('ec-brand').value;
     storeSet('cars', CARS);
     renderCars();
   }
   const debouncedPersist = debounce(persist, 500);
   activeFlush = persist;
   ['ec-name','ec-plate','ec-tire','ec-oil','ec-battery'].forEach(id=> document.getElementById(id).addEventListener('input', debouncedPersist));
-  document.getElementById('ec-brand').addEventListener('change', persist);
   document.getElementById('doneEditCarBtn').addEventListener('click', closeSheet);
 }
 
