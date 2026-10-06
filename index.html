@@ -276,11 +276,28 @@ input:focus, select:focus, textarea:focus{outline:none; border-color:var(--amber
 .flag{font-size:10.5px; padding:4px 9px; border-radius:20px; font-weight:700; display:flex; align-items:center; gap:4px;}
 .flag.ok{background:rgba(127,194,155,0.15); color:var(--good);}
 .flag.warn{background:rgba(217,119,87,0.18); color:var(--terracotta);}
-.car-head{align-items:flex-start !important; gap:12px;}
+.car-head{
+  display:grid !important; align-items:start !important; column-gap:12px;
+  grid-template-columns:auto minmax(0,1fr) auto;
+  grid-template-areas:"badge main side" "badge info side" "badge flags side";
+}
+.car-head > .car-badge{grid-area:badge;}
+.car-head > .car-head-main{grid-area:main;}
+.car-head > .car-head-side{grid-area:side;}
+.car-head > .car-info-row{grid-area:info;}
+.car-head > .car-flags{grid-area:flags;}
+@media (max-width:560px){
+  .car-head{grid-template-areas:"badge main side" "info info info" "flags flags flags";}
+  .car-head > .car-head-main{align-self:center;}
+  .car-head > .car-info-row{margin-top:11px;}
+}
 .car-head-main{flex:1; min-width:0;}
 .car-head-side{display:flex; flex-direction:column; align-items:center; gap:10px; flex-shrink:0;}
 .car-head-side .car-edit-btn{padding:4px; opacity:.8;}
-.car-info-row{display:flex; gap:6px; flex-wrap:wrap; margin-top:7px;}
+.car-info-row{display:flex; gap:5px; flex-wrap:nowrap; margin-top:7px; min-width:0;}
+.car-info-row .car-info{min-width:0; flex:0 1 auto; padding:3px 7px; font-size:10.5px;}
+.car-info-row .car-info svg{flex-shrink:0;}
+.ci-t{overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0;}
 .car-flags{margin-top:7px !important;}
 .car-badge{
   flex-shrink:0; width:42px; height:42px; border-radius:50%;
@@ -1218,6 +1235,11 @@ const BRANDS = [
   ['porsche','Porsche','POR'],['infiniti','Infiniti','INF'],['dodge','Dodge','DOD'],['suzuki','Suzuki','SUZ'],['isuzu','Isuzu','ISZ'],
   ['mg ','MG','MG'],['geely','Geely','GLY'],['chery','Chery','CHY'],['tesla','Tesla','TSL'],['volvo','Volvo','VOL'],['subaru','Subaru','SUB']
 ];
+function brandList(){ const seen={}; return BRANDS.filter(b=>{ if(seen[b[1]]) return false; seen[b[1]]=1; return true; }).map(b=>({name:b[1], abbr:b[2]})).sort((a,b)=>a.name.localeCompare(b.name)); }
+function brandFor(car){
+  if(car.brand){ const b = BRANDS.find(x=>x[1]===car.brand); if(b) return brandOf(b[0]); }
+  return brandOf(car.name);
+}
 function brandOf(name){
   const n = ' '+String(name||'').toLowerCase()+' ';
   const hit = BRANDS.find(([k])=> n.includes(k.trim()===k? k : ' '+k.trim()+' ') || n.includes(' '+k));
@@ -1252,23 +1274,24 @@ function renderCarCard(car){
   return `
   <div class="card car-card ${isOpen?'open':''} ${car.sold?'sold':''}" id="car-${car.id}">
     <div class="car-head">
-      <div class="car-badge" style="--bh:${brandOf(car.name).hue}" title="${esc(brandOf(car.name).name)}">${brandOf(car.name).abbr}</div>
+      ${(()=>{const b=brandFor(car); return `<div class="car-badge" style="--bh:${b.hue}" title="${esc(b.name)}">${b.abbr}</div>`;})()}
       <div class="car-head-main">
         <div class="car-name-row">
           <span class="car-title">${esc(car.name)}</span>
           ${car.plate? `<span class="car-plate">${esc(car.plate)}</span>` : ''}
           ${car.sold? `<span class="sold-badge">${icon('archiveBox',11)} Sold</span>` : ''}
         </div>
-        <div class="car-info-row">
-          <span class="car-info ${car.tireSize?'':'empty'}" title="Tyre size">${icon('tire',12)} ${car.tireSize? esc(car.tireSize) : 'Tyre size'}</span>
-          <span class="car-info ${car.oil?'':'empty'}" title="Engine oil">${icon('oil',12)} ${car.oil? esc(car.oil) : 'Engine oil'}</span>
-        </div>
-        <div class="car-flags">${flags}</div>
       </div>
       <div class="car-head-side">
         <button class="car-edit-btn" data-editcar="${car.id}" title="Edit car details">${icon('pencil',16)}</button>
         <svg class="chev" viewBox="0 0 24 24" width="20" height="20" stroke="#c9c0ae" stroke-width="2" fill="none"><path d="M6 9l6 6 6-6"/></svg>
       </div>
+      <div class="car-info-row">
+          <span class="car-info ${car.tireSize?'':'empty'}" title="Tyre size">${icon('tire',12)} <span class="ci-t">${car.tireSize? esc(car.tireSize) : 'Tyre'}</span></span>
+          <span class="car-info ${car.oil?'':'empty'}" title="Engine oil">${icon('oil',12)} <span class="ci-t">${car.oil? esc(car.oil) : 'Oil'}</span></span>
+          <span class="car-info ${car.batteryInfo?'':'empty'}" title="Battery">${icon('battery',12)} <span class="ci-t">${car.batteryInfo? esc(car.batteryInfo) : 'Battery'}</span></span>
+        </div>
+      <div class="car-flags">${flags}</div>
     </div>
     <div class="car-detail"><div class="car-detail-inner">
       ${renderCarDetailBody(car)}
@@ -1599,6 +1622,12 @@ function openEditCarSheet(carId){
       <div><label>Tyre size</label><input id="ec-tire" value="${(car.tireSize||'').replace(/"/g,'&quot;')}" placeholder="e.g. 265/60 R18"></div>
       <div><label>Engine oil</label><input id="ec-oil" value="${(car.oil||'').replace(/"/g,'&quot;')}" placeholder="e.g. 5W-30 · 6.5 L"></div>
     </div>
+    <label>Battery (number / type)</label><input id="ec-battery" value="${(car.batteryInfo||'').replace(/"/g,'&quot;')}" placeholder="e.g. 70Ah AGM · DIN 57539">
+    <label>Brand badge</label>
+    <select id="ec-brand">
+      <option value="">Auto (from car name) — ${esc(brandOf(car.name).name)}</option>
+      ${brandList().map(b=>`<option value="${esc(b.name)}" ${car.brand===b.name?'selected':''}>${esc(b.name)} (${b.abbr})</option>`).join('')}
+    </select>
     <div class="field-hint">Saves automatically</div>
     <div class="actions"><button class="btn block" id="doneEditCarBtn">Done</button></div>
   `);
@@ -1611,12 +1640,15 @@ function openEditCarSheet(carId){
     car.plate = plate;
     car.tireSize = document.getElementById('ec-tire').value.trim();
     car.oil = document.getElementById('ec-oil').value.trim();
+    car.batteryInfo = document.getElementById('ec-battery').value.trim();
+    car.brand = document.getElementById('ec-brand').value;
     storeSet('cars', CARS);
     renderCars();
   }
   const debouncedPersist = debounce(persist, 500);
   activeFlush = persist;
-  ['ec-name','ec-plate','ec-tire','ec-oil'].forEach(id=> document.getElementById(id).addEventListener('input', debouncedPersist));
+  ['ec-name','ec-plate','ec-tire','ec-oil','ec-battery'].forEach(id=> document.getElementById(id).addEventListener('input', debouncedPersist));
+  document.getElementById('ec-brand').addEventListener('change', persist);
   document.getElementById('doneEditCarBtn').addEventListener('click', closeSheet);
 }
 
