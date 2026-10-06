@@ -102,6 +102,15 @@ main{flex:1; padding:6px 16px 100px;}
   background:radial-gradient(circle, rgba(224,164,88,0.12), transparent 70%);
   pointer-events:none;
 }
+.trend-head{display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:10px; margin-bottom:12px;}
+.trend-head h3{margin:0 !important;}
+.trend-lbl{cursor:pointer; opacity:.45; transition:opacity .2s; font-size:13.5px !important; line-height:1.25;}
+.trend-lbl.on{opacity:1;}
+.trend-lbl.right{justify-content:flex-end; text-align:right;}
+.switch{position:relative; width:44px; height:24px; border-radius:24px; border:1px solid var(--line); background:var(--bg-2); cursor:pointer; padding:0; transition:background .2s, border-color .2s;}
+.switch .knob{position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%; background:var(--sand-dim); transition:transform .2s, background .2s;}
+.switch.on{background:rgba(224,164,88,0.25); border-color:var(--amber);}
+.switch.on .knob{transform:translateX(20px); background:var(--amber);}
 .card h3{margin:0 0 12px; font-size:15px; color:var(--amber-2); font-weight:700; display:flex; align-items:center; gap:8px;}
 
 /* KPI grid */
@@ -897,7 +906,11 @@ function renderHome(){
     </div>
 
     <div class="card">
-      <h3>${icon('trend',15)} Last 6 months bill trend</h3>
+      <div class="trend-head">
+        <h3 class="trend-lbl ${homeTrendMode==='months'?'on':''}" data-trend="months">${icon('trend',15)} Last 6 months bill trend</h3>
+        <button class="switch ${homeTrendMode==='years'?'on':''}" id="trendSwitch" role="switch" aria-checked="${homeTrendMode==='years'}" aria-label="Switch between months and years"><span class="knob"></span></button>
+        <h3 class="trend-lbl right ${homeTrendMode==='years'?'on':''}" data-trend="years">Total by year ${icon('barchart',15)}</h3>
+      </div>
       <div class="chart-wrap"><canvas id="homeTrendChart"></canvas></div>
     </div>
 
@@ -915,6 +928,10 @@ function renderHome(){
   `;
 
   drawHomeTrend();
+  const setMode = (m)=>{ homeTrendMode = m; try{ localStorage.setItem('baitalnoor:trendMode', m); }catch(e){} renderHome(); };
+  const sw = document.getElementById('trendSwitch');
+  if(sw) sw.addEventListener('click', ()=> setMode(homeTrendMode==='years'? 'months' : 'years'));
+  document.querySelectorAll('.trend-lbl[data-trend]').forEach(l=> l.addEventListener('click', ()=> setMode(l.dataset.trend)));
 }
 
 function carTypeLabel(t){
@@ -927,6 +944,7 @@ function latestByDate(arr){
 }
 
 let homeChart;
+let homeTrendMode = (()=>{ try{ return localStorage.getItem('baitalnoor:trendMode')==='years'? 'years' : 'months'; }catch(e){ return 'months'; } })();
 function drawHomeTrend(){
   const ctx = document.getElementById('homeTrendChart');
   if(!ctx) return;
@@ -934,6 +952,7 @@ function drawHomeTrend(){
     ctx.parentElement.innerHTML = '<div class="empty-msg">Unable to load the chart (no internet connection)</div>';
     return;
   }
+  if(homeTrendMode==='years') return drawHomeYearly(ctx);
   try{
   // gather last 6 months that actually have data, across years in order
   const seq = billsSequence().slice(-6);
@@ -958,6 +977,37 @@ function drawHomeTrend(){
     }
   });
   }catch(e){ console.error('drawHomeTrend failed', e); }
+}
+
+function drawHomeYearly(ctx){
+  try{
+  const years = Object.keys(BILLS).sort().filter(y=> Object.values(BILLS[y]||{}).some(rec=> rec && CATS.some(c=> rec[c.key]!=null && rec[c.key]!=='')));
+  const sumCat = (y,k)=> Object.values(BILLS[y]||{}).reduce((s,rec)=> s+(Number(rec && rec[k])||0), 0);
+  const datasets = CATS.map(c=>({
+    label:c.label,
+    data:years.map(y=> Math.round(sumCat(y,c.key)*1000)/1000),
+    backgroundColor:c.color+'cc', borderColor:c.color, borderWidth:1, borderRadius:4, stack:'t'
+  }));
+  if(homeChart) homeChart.destroy();
+  homeChart = new Chart(ctx, {
+    type:'bar',
+    data:{labels:years, datasets},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{labels:{color:'#c9c0ae', font:{family:'Tajawal', size:9}, boxWidth:8, boxHeight:8, padding:7, usePointStyle:true, pointStyle:'circle'}},
+        tooltip:{mode:'index', intersect:false, callbacks:{
+          label:(c)=> ` ${c.dataset.label}: ${Number(c.parsed.y).toFixed(3)}`,
+          footer:(items)=> 'Total: '+items.reduce((s,i)=>s+Number(i.parsed.y),0).toFixed(3)
+        }}
+      },
+      scales:{
+        x:{stacked:true, ticks:{color:'#c9c0ae', font:{size:10}}, grid:{display:false}},
+        y:{stacked:true, ticks:{color:'#c9c0ae', font:{size:10}}, grid:{color:'#2b4a4644'}}
+      }
+    }
+  });
+  }catch(e){ console.error('drawHomeYearly failed', e); }
 }
 
 /* ================================================================
