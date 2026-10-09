@@ -84,6 +84,11 @@ header.top::after{
 main{flex:1; padding:6px 16px 100px;}
 .view{display:none; animation:fadeUp .35s ease;}
 .view.active{display:block;}
+.view.active.slide-next{animation:slideNext .28s ease;}
+.view.active.slide-prev{animation:slidePrev .28s ease;}
+@keyframes slideNext{from{opacity:0; transform:translateX(44px);} to{opacity:1; transform:none;}}
+@keyframes slidePrev{from{opacity:0; transform:translateX(-44px);} to{opacity:1; transform:none;}}
+main{touch-action:pan-y;}
 @keyframes fadeUp{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);}}
 
 /* Cards */
@@ -831,7 +836,10 @@ function bindNav(){
       document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
       const v = btn.dataset.view;
       currentView = v;
-      document.getElementById('view-'+v).classList.add('active');
+      const viewEl = document.getElementById('view-'+v);
+      viewEl.classList.remove('slide-next','slide-prev');
+      viewEl.classList.add('active');
+      if(swipeDir){ void viewEl.offsetWidth; viewEl.classList.add('slide-'+swipeDir); swipeDir = null; }
       const titles = {home:['Dashboard','Home bills & car tracking'], bills:['Bills','Monthly home consumption'], cars:['Cars','Service, insurance, tires & expenses'], appts:['Appointments','Upcoming dates & reminders']};
       document.getElementById('headerTitle').textContent = titles[v][0];
       document.getElementById('headerSub').textContent = titles[v][1];
@@ -1959,6 +1967,40 @@ function openAlertsSheet(){
   }));
   document.getElementById('alertsCloseBtn').addEventListener('click', closeSheet);
 }
+/* ============ SWIPE between main pages (phone) ============ */
+const VIEW_ORDER = ['home','bills','cars','appts'];
+let swipeDir = null;
+(function enableSwipe(){
+  const main = document.querySelector('main');
+  if(!main) return;
+  let sx=0, sy=0, st=0, track=false;
+  const blocked = (target)=>{
+    if(target.closest('input, select, textarea, .year-chip-row, .segmented, .chart-wrap, .no-swipe')) return true;
+    for(let n=target; n && n!==main; n=n.parentElement){        // anything that scrolls sideways keeps its own swipe
+      if(n.scrollWidth > n.clientWidth + 2){ const ox = getComputedStyle(n).overflowX; if(ox==='auto' || ox==='scroll') return true; }
+    }
+    return false;
+  };
+  main.addEventListener('touchstart', (e)=>{
+    track = false;
+    if(e.touches.length!==1 || document.getElementById('overlay').classList.contains('show')) return;
+    const t = e.touches[0];
+    if(t.clientX < 24 || t.clientX > window.innerWidth - 24) return;   // leave screen edges to the phone's back gesture
+    if(blocked(e.target)) return;
+    sx = t.clientX; sy = t.clientY; st = Date.now(); track = true;
+  }, {passive:true});
+  main.addEventListener('touchcancel', ()=>{ track = false; }, {passive:true});
+  main.addEventListener('touchend', (e)=>{
+    if(!track) return;
+    track = false;
+    const t = e.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy;
+    if(Date.now() - st > 700 || Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.6) return;
+    const i = VIEW_ORDER.indexOf(currentView), j = dx < 0 ? i + 1 : i - 1;
+    if(i < 0 || j < 0 || j >= VIEW_ORDER.length) return;
+    swipeDir = dx < 0 ? 'next' : 'prev';
+    goView(VIEW_ORDER[j]);
+  }, {passive:true});
+})();
 function goView(v){
   const b = document.querySelector(`.tab-btn[data-view="${v}"]`);
   if(b) b.click();
