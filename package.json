@@ -1,8 +1,13 @@
 {
   "name": "bait-alnoor",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "private": true,
   "type": "module",
-  "engines": { "node": "24.x" },
-  "dependencies": { "@neondatabase/serverless": "^1.0.0" }
+  "engines": {
+    "node": "24.x"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.0.0",
+    "web-push": "^3.6.7"
+  }
 }
