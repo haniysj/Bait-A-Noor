@@ -367,6 +367,32 @@ input:focus, select:focus, textarea:focus{outline:none; border-color:var(--amber
 .muted{color:var(--sand-dim);}
 .fab-space{height:6px;}
 ::-webkit-scrollbar{width:0;height:0;}
+/* Ownership document */
+.car-head-btns{display:flex; align-items:center; gap:2px;}
+.car-eye.off{opacity:.35;}
+.doc-box{background:var(--bg-2); border:1px dashed var(--line); border-radius:12px; padding:10px;}
+.doc-box.has{border-style:solid;}
+.doc-file{display:flex; align-items:center; gap:10px; margin-bottom:10px; min-width:0;}
+.doc-file .pdf-ic{flex-shrink:0;}
+.doc-file b{display:block; font-size:13px; color:var(--sand); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.doc-file small{font-size:11px; color:var(--sand-dim);}
+.doc-file > div{min-width:0;}
+.doc-box .btn-row{gap:8px;}
+.doc-box .btn-row .btn{padding:8px 6px;}
+.doc-status{font-size:11.5px; margin-top:8px; color:var(--sand-dim);}
+.doc-status.err{color:var(--danger);} .doc-status.ok{color:var(--good);}
+.doc-viewer{position:fixed; inset:0; z-index:200; background:#0b1514; display:flex; flex-direction:column;}
+.doc-viewer[hidden]{display:none;}
+.dv-bar{display:flex; align-items:center; gap:8px; padding:calc(10px + env(safe-area-inset-top)) 12px 10px; background:var(--card); border-bottom:1px solid var(--line);}
+.dv-title{flex:1; min-width:0;}
+.dv-title b{display:block; font:700 14px 'Cairo',sans-serif; color:var(--sand); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.dv-title small{display:block; font-size:11px; color:var(--sand-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.dv-btn{width:36px; height:36px; border-radius:11px; background:var(--card-2); border:1px solid var(--line); color:var(--sand-dim); display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0;}
+#dvShare{flex-shrink:0;}
+.dv-body{flex:1; overflow:auto; padding:14px; -webkit-overflow-scrolling:touch;}
+.dv-page{display:block; margin:0 auto 14px; background:#fff; border-radius:6px; box-shadow:0 6px 20px rgba(0,0,0,.45); max-width:none;}
+.dv-msg{color:var(--sand-dim); text-align:center; padding:48px 12px; font-size:13.5px;}
+@media (max-width:430px){ .dv-bar{gap:6px; padding-left:10px; padding-right:10px;} #dvShare{padding:7px 10px;} }
 /* Bell */
 .bell-btn{position:relative;}
 .bell-btn.has{color:var(--amber-2); border-color:rgba(224,164,88,.55);}
@@ -556,6 +582,18 @@ input:focus, select:focus, textarea:focus{outline:none; border-color:var(--amber
   </nav>
 </div>
 
+<!-- Document viewer (ownership PDF) -->
+<div class="doc-viewer" id="docViewer" hidden>
+  <div class="dv-bar">
+    <button class="dv-btn" id="dvClose" title="Close"></button>
+    <div class="dv-title"><b id="dvTitle">Ownership</b><small id="dvSub"></small></div>
+    <button class="dv-btn" id="dvZoomOut" title="Zoom out"></button>
+    <button class="dv-btn" id="dvZoomIn" title="Zoom in"></button>
+    <button class="btn small" id="dvShare"></button>
+  </div>
+  <div class="dv-body" id="dvBody"></div>
+</div>
+
 <!-- Generic bottom sheet -->
 <div class="overlay" id="overlay">
   <div class="sheet" id="sheet"></div>
@@ -671,6 +709,10 @@ const ICON_PATHS = {
   bell: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>',
   pin: '<path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11Z"/><circle cx="12" cy="10" r="2.5"/>',
   install: '<rect x="6" y="2" width="12" height="20" rx="2"/><path d="M12 7v7"/><path d="m9 11 3 3 3-3"/>',
+  eye: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
+  share: '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4"/><path d="m15.4 6.5-6.8 4"/>',
+  zoomIn: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/><path d="M11 8v6"/><path d="M8 11h6"/>',
+  zoomOut: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/><path d="M8 11h6"/>',
   chevR: '<path d="m9 6 6 6-6 6"/>',
   download: '<path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/>',
   upload: '<path d="M12 21V9"/><path d="m7 14 5-5 5 5"/><path d="M5 3h14"/>',
@@ -1347,6 +1389,12 @@ function renderCars(){
       e.stopPropagation();
       openEditCarSheet(car.id);
     });
+    const eyeBtn = cardEl.querySelector('[data-viewdoc]');
+    if(eyeBtn) eyeBtn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      if(car.ownership) openDocViewer(car);
+      else if(confirm('No ownership PDF for this car yet. Upload one now?')) openEditCarSheet(car.id);
+    });
   });
   document.getElementById('addCarBtn').addEventListener('click', openAddCarSheet);
 
@@ -1388,7 +1436,10 @@ function renderCarCard(car){
         </div>
       </div>
       <div class="car-head-side">
-        <button class="car-edit-btn" data-editcar="${car.id}" title="Edit car details">${icon('pencil',16)}</button>
+        <div class="car-head-btns">
+          <button class="car-edit-btn car-eye ${car.ownership?'':'off'}" data-viewdoc="${car.id}" title="${car.ownership?'View ownership (PDF)':'No ownership PDF yet'}">${icon('eye',17)}</button>
+          <button class="car-edit-btn" data-editcar="${car.id}" title="Edit car details">${icon('pencil',16)}</button>
+        </div>
         <svg class="chev" viewBox="0 0 24 24" width="20" height="20" stroke="#c9c0ae" stroke-width="2" fill="none"><path d="M6 9l6 6 6-6"/></svg>
       </div>
       <div class="car-info-row">
@@ -1494,6 +1545,7 @@ function bindCarDetail(carId){
   if(delCarBtn) delCarBtn.addEventListener('click', async (e)=>{
     e.stopPropagation();
     if(!confirm('Permanently delete this car?')) return;
+    if(car && car.ownership){ docApi('DELETE', carId).catch(()=>{}); clearDocCache(carId); }
     CARS = CARS.filter(c=>c.id!==carId);
     openCarId = null;
     await storeSet('cars', CARS);
@@ -1745,9 +1797,13 @@ function openEditCarSheet(carId){
       <div><label>Engine oil</label><input id="ec-oil" value="${(car.oil||'').replace(/"/g,'&quot;')}" placeholder="e.g. 5W-30 · 6.5 L"></div>
     </div>
     <label>Battery (number / type)</label><input id="ec-battery" value="${(car.batteryInfo||'').replace(/"/g,'&quot;')}" placeholder="e.g. 70Ah AGM · DIN 57539">
+    <label>Ownership document (PDF)</label>
+    <div class="doc-box" id="ec-docbox"></div>
+    <input type="file" id="ec-docfile" accept="application/pdf,.pdf" style="display:none">
     <div class="field-hint">Saves automatically</div>
     <div class="actions"><button class="btn block" id="doneEditCarBtn">Done</button></div>
   `);
+  bindOwnershipBox(car);
 
   function persist(){
     const name = document.getElementById('ec-name').value.trim();
@@ -2129,6 +2185,174 @@ function bindSettingsExtras(){
     tb.disabled = false;
   });
 }
+
+/* ================================================================
+   OWNERSHIP DOCUMENT (PDF): upload, view, share
+================================================================= */
+const DOC_MAX = 3 * 1024 * 1024;
+const DOC_CACHE = 'bait-docs';
+const PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+const PDF_ICON = '<svg class="pdf-ic" viewBox="0 0 24 24" width="30" height="30"><path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z" fill="#D93025"/><path d="M15 2v5h5" fill="#F28B82"/><text x="12" y="17.5" text-anchor="middle" font-family="Cairo,Arial,sans-serif" font-size="6.2" font-weight="800" fill="#fff">PDF</text></svg>';
+const fmtSize = (n)=> n >= 1048576 ? (n/1048576).toFixed(1)+' MB' : Math.max(1, Math.round(n/1024))+' KB';
+
+async function docApi(method, carId, body, retried){
+  const opts = {method, cache:'no-store', headers:{'x-app-key':getAppKey(false)}};
+  if(body){ opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
+  const r = await fetch('/api/doc?car='+encodeURIComponent(carId), opts);
+  if(r.status===401 && !retried){ getAppKey(true); return docApi(method, carId, body, true); }
+  if(r.status===404) return null;
+  if(r.status===413) throw new Error('too large');
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  return r.json();
+}
+function b64ToBlob(b64, type){
+  const bin = atob(b64), u = new Uint8Array(bin.length);
+  for(let i=0; i<bin.length; i++) u[i] = bin.charCodeAt(i);
+  return new Blob([u], {type});
+}
+const docCacheKey = (car)=> `/doc-cache/own/${car.id}/${encodeURIComponent(car.ownership && car.ownership.uploadedAt || '')}`;
+async function clearDocCache(carId, keepKey){
+  try{
+    const c = await caches.open(DOC_CACHE);
+    for(const req of await c.keys()){ const p = new URL(req.url).pathname; if(p.startsWith(`/doc-cache/own/${carId}/`) && p!==keepKey) await c.delete(req); }
+  }catch(e){}
+}
+async function getOwnershipBlob(car){
+  const key = docCacheKey(car);
+  try{ const hit = await (await caches.open(DOC_CACHE)).match(key); if(hit) return await hit.blob(); }catch(e){}
+  const d = await docApi('GET', car.id);
+  if(!d || !d.data) return null;
+  const blob = b64ToBlob(d.data, 'application/pdf');
+  try{ await (await caches.open(DOC_CACHE)).put(key, new Response(blob, {headers:{'Content-Type':'application/pdf'}})); clearDocCache(car.id, key); }catch(e){}
+  return blob;
+}
+function readAsBase64(file){
+  return new Promise((res, rej)=>{ const r = new FileReader(); r.onload = ()=> res(String(r.result).split(',')[1] || ''); r.onerror = ()=> rej(r.error); r.readAsDataURL(file); });
+}
+
+function bindOwnershipBox(car){
+  const box = document.getElementById('ec-docbox'), input = document.getElementById('ec-docfile');
+  if(!box || !input) return;
+  const draw = (status, cls)=>{
+    const o = car.ownership;
+    box.classList.toggle('has', !!o);
+    box.innerHTML = o ? `
+      <div class="doc-file">${PDF_ICON}<div><b>${esc(o.name)}</b><small>${fmtSize(o.size||0)} · uploaded ${formatDMY((o.uploadedAt||'').slice(0,10))}</small></div></div>
+      <div class="btn-row">
+        <button class="btn small ghost" id="ec-docview">${icon('eye',14)} View</button>
+        <button class="btn small ghost" id="ec-docup">${icon('upload',14)} Replace</button>
+        <button class="btn small danger" id="ec-docdel">Remove</button>
+      </div>` : `
+      <button class="btn small ghost block" id="ec-docup">${icon('upload',14)} Upload ownership PDF</button>
+      <div class="field-hint" style="margin-top:6px;">PDF only, up to 3 MB.</div>`;
+    if(status) box.insertAdjacentHTML('beforeend', `<div class="doc-status ${cls||''}">${status}</div>`);
+    const up = document.getElementById('ec-docup'), vw = document.getElementById('ec-docview'), dl = document.getElementById('ec-docdel');
+    if(up) up.addEventListener('click', ()=> input.click());
+    if(vw) vw.addEventListener('click', ()=> openDocViewer(car));
+    if(dl) dl.addEventListener('click', async ()=>{
+      if(!confirm('Remove the ownership PDF for this car?')) return;
+      try{ await docApi('DELETE', car.id); }catch(e){ return draw('Could not remove — check your connection.', 'err'); }
+      delete car.ownership; clearDocCache(car.id);
+      await storeSet('cars', CARS); renderCars(); draw('Removed.', 'ok');
+    });
+  };
+  input.addEventListener('change', async ()=>{
+    const f = input.files && input.files[0];
+    input.value = '';
+    if(!f) return;
+    if(!(f.type==='application/pdf' || /\.pdf$/i.test(f.name))) return draw('Please choose a PDF file.', 'err');
+    if(f.size > DOC_MAX) return draw(`This PDF is ${fmtSize(f.size)} — the limit is 3 MB. Please use a smaller/compressed PDF.`, 'err');
+    draw('Uploading…');
+    try{
+      const b64 = await readAsBase64(f);
+      if(!b64.startsWith('JVBER')) return draw('This file is not a valid PDF.', 'err');
+      const r = await docApi('PUT', car.id, {name:f.name, data:b64});
+      car.ownership = {name:r.name, size:r.size, uploadedAt:r.uploadedAt};
+      try{ const key = docCacheKey(car); await (await caches.open(DOC_CACHE)).put(key, new Response(f, {headers:{'Content-Type':'application/pdf'}})); clearDocCache(car.id, key); }catch(e){}
+      await storeSet('cars', CARS); renderCars();
+      draw('Uploaded ✓', 'ok');
+    }catch(e){
+      draw(e.message==='too large' ? 'File too large — the limit is 3 MB.' : 'Upload failed — check your connection and try again.', 'err');
+    }
+  });
+  draw();
+}
+
+let pdfjsReady = null;
+function loadPdfJs(){
+  if(window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+  if(!pdfjsReady) pdfjsReady = new Promise((res, rej)=>{
+    const s = document.createElement('script');
+    s.src = PDFJS + 'pdf.min.js';
+    s.onload = ()=>{ window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS + 'pdf.worker.min.js'; res(window.pdfjsLib); };
+    s.onerror = ()=>{ pdfjsReady = null; rej(new Error('viewer failed to load')); };
+    document.head.appendChild(s);
+  });
+  return pdfjsReady;
+}
+
+const docView = {blob:null, file:null, zoom:1};
+async function openDocViewer(car){
+  const v = document.getElementById('docViewer'), body = document.getElementById('dvBody');
+  document.getElementById('dvClose').innerHTML = icon('close',18);
+  document.getElementById('dvZoomOut').innerHTML = icon('zoomOut',17);
+  document.getElementById('dvZoomIn').innerHTML = icon('zoomIn',17);
+  document.getElementById('dvTitle').textContent = `Ownership — ${car.name}`;
+  document.getElementById('dvSub').textContent = [car.plate, car.ownership && car.ownership.name].filter(Boolean).join(' · ');
+  const shareBtn = document.getElementById('dvShare');
+  shareBtn.style.visibility = 'hidden';
+  body.innerHTML = `<div class="dv-msg">Loading…</div>`;
+  docView.zoom = 1; docView.blob = null;
+  v.hidden = false; document.body.style.overflow = 'hidden';
+  try{
+    const blob = await getOwnershipBlob(car);
+    if(!blob){ body.innerHTML = `<div class="dv-msg">No ownership PDF found for this car.</div>`; return; }
+    const fname = `Ownership - ${car.name}${car.plate? ' '+car.plate : ''}.pdf`.replace(/[\\/:*?"<>|]+/g, '-');
+    docView.blob = blob; docView.file = new File([blob], fname, {type:'application/pdf'});
+    const canShare = !!(navigator.canShare && navigator.canShare({files:[docView.file]}));
+    shareBtn.innerHTML = canShare ? `${icon('share',14)} Share` : `${icon('download',14)} Download`;
+    shareBtn.style.visibility = '';
+    const pdfjs = await loadPdfJs();
+    const pdf = await pdfjs.getDocument({data: new Uint8Array(await blob.arrayBuffer())}).promise;
+    body.innerHTML = '';
+    const baseW = Math.min(body.clientWidth - 28, 900);
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    for(let p=1; p<=pdf.numPages; p++){
+      const page = await pdf.getPage(p);
+      const vp1 = page.getViewport({scale:1});
+      const scale = Math.min(baseW * dpr * 2, 2600) / vp1.width;   // sharp enough to zoom in
+      const vp = page.getViewport({scale});
+      const c = document.createElement('canvas');
+      c.className = 'dv-page'; c.width = Math.round(vp.width); c.height = Math.round(vp.height);
+      c.dataset.w = baseW; c.style.width = baseW + 'px';
+      body.appendChild(c);
+      await page.render({canvasContext:c.getContext('2d'), viewport:vp}).promise;
+    }
+  }catch(e){
+    console.error(e);
+    body.innerHTML = `<div class="dv-msg">Couldn't show the PDF here${docView.blob ? ' — use the button above to open or save it.' : ' — check your connection and try again.'}</div>`;
+  }
+}
+function closeDocViewer(){ document.getElementById('docViewer').hidden = true; document.body.style.overflow = ''; }
+function zoomDoc(step){
+  docView.zoom = Math.min(3, Math.max(1, Math.round((docView.zoom + step) * 2) / 2));
+  document.querySelectorAll('#dvBody .dv-page').forEach(c=> c.style.width = (Number(c.dataset.w) * docView.zoom) + 'px');
+}
+async function shareDoc(){
+  if(!docView.file) return;
+  if(navigator.canShare && navigator.canShare({files:[docView.file]})){
+    try{ await navigator.share({files:[docView.file], title:docView.file.name}); return; }
+    catch(e){ if(e && e.name==='AbortError') return; }
+  }
+  const url = URL.createObjectURL(docView.blob), a = document.createElement('a');
+  a.href = url; a.download = docView.file.name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=> URL.revokeObjectURL(url), 4000);
+}
+document.getElementById('dvClose').addEventListener('click', closeDocViewer);
+document.getElementById('dvZoomIn').addEventListener('click', ()=> zoomDoc(0.5));
+document.getElementById('dvZoomOut').addEventListener('click', ()=> zoomDoc(-0.5));
+document.getElementById('dvShare').addEventListener('click', shareDoc);
+document.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && !document.getElementById('docViewer').hidden) closeDocViewer(); });
 
 init();
 </script>
