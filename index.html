@@ -16,7 +16,26 @@
 <meta name="apple-mobile-web-app-title" content="Bait Al Noor">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script src="/alerts.js"></script>
+<script src="/sms.js"></script>
 <style>
+/* App lock (fingerprint / face) */
+#lockScreen{display:none; position:fixed; inset:0; z-index:9999; background:radial-gradient(circle at 50% 30%, #1f3a37 0%, var(--bg-2) 70%); color:var(--sand); align-items:center; justify-content:center; padding:24px; font-family:'Cairo',sans-serif;}
+html.locked #lockScreen{display:flex;}
+html.locked body > *:not(#lockScreen){visibility:hidden;}
+.lock-box{width:100%; max-width:340px; text-align:center;}
+.lock-logo{width:76px; height:76px; border-radius:22px; margin:0 auto 14px; display:block; box-shadow:0 10px 30px rgba(0,0,0,.4);}
+.lock-title{font-size:24px; font-weight:800; margin:0;}
+.lock-sub{font-size:13px; color:var(--sand-dim); margin:4px 0 28px;}
+.lock-fp{width:96px; height:96px; border-radius:50%; border:1.5px solid var(--line); background:rgba(224,164,88,.08); color:var(--amber-2); display:flex; align-items:center; justify-content:center; margin:0 auto 14px; cursor:pointer; transition:transform .15s, background .15s;}
+.lock-fp:active{transform:scale(.95); background:rgba(224,164,88,.16);}
+.lock-msg{min-height:20px; font-size:13px; color:var(--sand-dim); margin-bottom:18px;}
+.lock-msg.err{color:var(--danger);}
+.lock-alt{background:none; border:none; color:var(--amber); font:600 13px 'Cairo',sans-serif; text-decoration:underline; cursor:pointer; padding:6px;}
+.lock-key{display:none; margin-top:12px; gap:8px;}
+.lock-key.show{display:flex;}
+.lock-key input{flex:1; min-width:0; background:var(--bg-2); border:1px solid var(--line); border-radius:12px; color:var(--sand); padding:10px 12px; font:14px 'Cairo',sans-serif;}
+.set-toggle-row{display:flex; align-items:center; justify-content:space-between; gap:12px;}
+.badge-on{font-size:11px; font-weight:700; padding:2px 8px; border-radius:20px; background:rgba(127,194,155,.15); color:var(--good);}
 :root{
   --bg:#12201f;
   --bg-2:#0d1918;
@@ -367,6 +386,39 @@ input:focus, select:focus, textarea:focus{outline:none; border-color:var(--amber
 .muted{color:var(--sand-dim);}
 .fab-space{height:6px;}
 ::-webkit-scrollbar{width:0;height:0;}
+/* Expenses */
+@media (max-width:560px){ nav.tabbar{padding-left:2px; padding-right:2px;} nav.tabbar button{padding:6px 6px; font-size:10.5px; min-width:0; flex:1;} }
+.exp-total{display:flex; align-items:flex-end; justify-content:space-between; gap:10px; flex-wrap:wrap;}
+.exp-total .big{font-family:'Cairo'; font-weight:800; font-size:28px; color:var(--sand); line-height:1.1;}
+.exp-total .big .money{gap:6px;}
+.exp-sub{font-size:12px; color:var(--sand-dim); margin-top:4px;}
+.exp-bars{margin-top:14px; display:flex; flex-direction:column; gap:9px;}
+.exp-bar{display:grid; grid-template-columns:22px minmax(0,1fr) auto; gap:8px; align-items:center; font-size:12.5px;}
+.exp-bar .lbl{display:flex; flex-direction:column; gap:4px; min-width:0;}
+.exp-bar .lbl span{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--sand);}
+.exp-bar .track{height:6px; border-radius:6px; background:var(--bg-2); overflow:hidden;}
+.exp-bar .fill{height:100%; border-radius:6px;}
+.exp-bar .amt{font-family:'Cairo'; font-weight:700; color:var(--sand); white-space:nowrap;}
+.exp-day{display:flex; justify-content:space-between; font-size:11.5px; color:var(--amber-2); font-weight:700; margin:14px 0 2px; padding:0 4px;}
+.exp-day:first-of-type{margin-top:4px;}
+.exp-row{display:flex; align-items:center; gap:11px; padding:10px 4px; border-bottom:1px solid var(--line); cursor:pointer; border-radius:10px;}
+.exp-row:last-child{border-bottom:none;}
+.exp-row:active{background:rgba(224,164,88,0.06);}
+.cat-ic{width:34px; height:34px; border-radius:11px; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+.exp-main{flex:1; min-width:0;}
+.exp-merchant{font-weight:700; font-size:13.5px; color:var(--sand); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.exp-meta{font-size:11.5px; color:var(--sand-dim); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.exp-amt{font-family:'Cairo'; font-weight:700; font-size:15px; color:var(--amber-2); white-space:nowrap;}
+.exp-row.refund .exp-amt{color:var(--good);}
+.exp-src{display:inline-flex; align-items:center; gap:3px;}
+.unparsed{background:var(--bg-2); border:1px solid var(--line); border-radius:12px; padding:10px; margin-bottom:8px; font-size:12px; color:var(--sand-dim); line-height:1.5;}
+.unparsed .btn-row{margin-top:8px;}
+.sms-preview{margin-top:10px; padding:10px; border-radius:12px; background:var(--bg-2); border:1px solid var(--line); font-size:12.5px; color:var(--sand-dim); min-height:20px;}
+.sms-preview.ok{border-color:rgba(127,194,155,.5);} .sms-preview.bad{border-color:rgba(224,113,95,.5);}
+.sms-preview b{color:var(--sand);}
+.webhook{word-break:break-all; font-family:monospace; font-size:11px; background:var(--bg-2); border:1px solid var(--line); border-radius:10px; padding:8px 10px; color:var(--sand); margin-bottom:8px;}
+.exp-banner{font-size:11.5px; color:var(--amber-2); background:rgba(224,164,88,.1); border:1px solid rgba(224,164,88,.3); border-radius:10px; padding:7px 10px; margin-bottom:12px;}
+@media (min-width:1024px){ #view-expenses.active{display:grid; grid-template-columns:1fr 1.3fr; gap:0 18px; align-items:start;} #view-expenses > .year-chip-row, #view-expenses > .exp-banner{grid-column:1 / -1;} }
 /* Ownership document */
 .car-head-btns{display:flex; align-items:center; gap:2px;}
 .car-eye.off{opacity:.35;}
@@ -529,6 +581,18 @@ input:focus, select:focus, textarea:focus{outline:none; border-color:var(--amber
 </style>
 </head>
 <body>
+<div id="lockScreen" role="dialog" aria-label="Locked">
+  <div class="lock-box">
+    <img class="lock-logo" src="/icon-192.png" alt="">
+    <h1 class="lock-title">Bait Al Noor</h1>
+    <p class="lock-sub">Locked — use your fingerprint or face to open</p>
+    <button class="lock-fp" id="lockFp" aria-label="Unlock"><svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4"/><path d="M14 13.12c0 2.38 0 6.38-1 8.88"/><path d="M17.29 21.02c.12-.6.43-2.3.5-3.02"/><path d="M2 12a10 10 0 0 1 18-6"/><path d="M2 16h.01"/><path d="M21.8 16c.2-2 .131-5.354 0-6"/><path d="M5 19.5C5.5 18 6 15 6 12a6 6 0 0 1 .34-2"/><path d="M8.65 22c.21-.66.45-1.32.57-2"/><path d="M9 6.8a6 6 0 0 1 9 5.2v2"/></svg></button>
+    <div class="lock-msg" id="lockMsg">Tap to unlock</div>
+    <button class="lock-alt" id="lockAltBtn">Use app key instead</button>
+    <div class="lock-key" id="lockKeyRow"><input id="lockKeyInput" type="password" placeholder="App key" autocomplete="current-password"><button class="btn small" id="lockKeyBtn">Open</button></div>
+  </div>
+</div>
+<script>try{ var _l = JSON.parse(localStorage.getItem('baitalnoor:lock')||'null'); if(_l && _l.id) document.documentElement.classList.add('locked'); }catch(e){}</script>
 <div id="app">
 
   <header class="top">
@@ -559,6 +623,8 @@ input:focus, select:focus, textarea:focus{outline:none; border-color:var(--amber
     <section class="view" id="view-cars"></section>
     <!-- APPOINTMENTS -->
     <section class="view" id="view-appts"></section>
+    <!-- EXPENSES -->
+    <section class="view" id="view-expenses"></section>
     <footer class="app-footer">Prepared by: Hani Al Ghatrifi &middot; &copy; 2026</footer>
   </main>
 
@@ -578,6 +644,10 @@ input:focus, select:focus, textarea:focus{outline:none; border-color:var(--amber
     <button data-view="appts" class="tab-btn">
       <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
       Appointments
+    </button>
+    <button data-view="expenses" class="tab-btn">
+      <svg viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19"/><path d="M6.5 15h4"/></svg>
+      Expenses
     </button>
   </nav>
 </div>
@@ -706,9 +776,17 @@ const ICON_PATHS = {
   close: '<line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/>',
   settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82A1.65 1.65 0 0 0 3 13.09H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
   calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 3v4"/><path d="M16 3v4"/>',
+  fingerprint: '<path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4"/><path d="M14 13.12c0 2.38 0 6.38-1 8.88"/><path d="M17.29 21.02c.12-.6.43-2.3.5-3.02"/><path d="M2 12a10 10 0 0 1 18-6"/><path d="M2 16h.01"/><path d="M21.8 16c.2-2 .131-5.354 0-6"/><path d="M5 19.5C5.5 18 6 15 6 12a6 6 0 0 1 .34-2"/><path d="M8.65 22c.21-.66.45-1.32.57-2"/><path d="M9 6.8a6 6 0 0 1 9 5.2v2"/>',
   bell: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>',
   pin: '<path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11Z"/><circle cx="12" cy="10" r="2.5"/>',
   install: '<rect x="6" y="2" width="12" height="20" rx="2"/><path d="M12 7v7"/><path d="m9 11 3 3 3-3"/>',
+  utensils: '<path d="M7 3v8"/><path d="M4.5 3v5a2.5 2.5 0 0 0 5 0V3"/><path d="M7 11v10"/><path d="M17 21V3c-2.2 0-4 2.2-4 6v5h4"/>',
+  cart: '<circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2.5 3h3l2.6 12.2a1.5 1.5 0 0 0 1.5 1.2h8.2a1.5 1.5 0 0 0 1.5-1.1L21 8H6.3"/>',
+  fuel: '<path d="M4 21V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v16"/><path d="M3 21h13"/><path d="M6.5 8h6"/><path d="M15 11h2a2 2 0 0 1 2 2v3.5a1.5 1.5 0 0 0 3 0V9l-3-3"/>',
+  bag: '<path d="M5 8h14l-1 13H6L5 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>',
+  heart: '<path d="M12 20s-7.5-4.6-9.2-9.3C1.7 7.6 3.7 4.5 7 4.5c2.1 0 3.6 1.2 5 3 1.4-1.8 2.9-3 5-3 3.3 0 5.3 3.1 4.2 6.2C19.5 15.4 12 20 12 20Z"/>',
+  sms: '<path d="M4 4h16a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H9l-5 4V5a1 1 0 0 1 1-1Z"/><path d="M8 9h8"/><path d="M8 12.5h5"/>',
+  copy: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',
   eye: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
   share: '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4"/><path d="m15.4 6.5-6.8 4"/>',
   zoomIn: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/><path d="M11 8v6"/><path d="M8 11h6"/>',
@@ -864,6 +942,7 @@ async function init(){
   try{ renderCars(); }catch(e){ console.error('renderCars failed', e); }
   try{ renderHome(); }catch(e){ console.error('renderHome failed', e); }
   refreshAlerts();
+  loadExpenses();
   if(location.hash==='#alerts') openAlertsFromHash();
   window.addEventListener('hashchange', ()=>{ if(location.hash==='#alerts') openAlertsFromHash(); });
   setInterval(refreshAlerts, 60*60*1000);
@@ -882,7 +961,8 @@ function bindNav(){
       viewEl.classList.remove('slide-next','slide-prev');
       viewEl.classList.add('active');
       if(swipeDir){ void viewEl.offsetWidth; viewEl.classList.add('slide-'+swipeDir); swipeDir = null; }
-      const titles = {home:['Dashboard','Home bills & car tracking'], bills:['Bills','Monthly home consumption'], cars:['Cars','Service, insurance, tires & expenses'], appts:['Appointments','Upcoming dates & reminders']};
+      if(v==='expenses') loadExpenses();
+      const titles = {home:['Dashboard','Home bills & car tracking'], bills:['Bills','Monthly home consumption'], cars:['Cars','Service, insurance, tires & expenses'], appts:['Appointments','Upcoming dates & reminders'], expenses:['Expenses','Spending from bank SMS']};
       document.getElementById('headerTitle').textContent = titles[v][0];
       document.getElementById('headerSub').textContent = titles[v][1];
     });
@@ -1711,6 +1791,17 @@ function openBackupSheet(){
       <div class="btn-row"><button class="btn" id="notifBtn">Enable</button><button class="btn ghost" id="notifTestBtn">Send test</button></div>
     </div>
     <div class="set-sec">
+      <div class="set-toggle-row"><div class="set-h" style="margin:0;">${icon('fingerprint',16)} App lock</div><span class="badge-on" id="lockBadge" style="display:none;">ON</span></div>
+      <div class="field-hint" id="lockHint" style="margin-top:6px;">Checking this device…</div>
+      <button class="btn" id="lockBtn" style="display:none;"></button>
+    </div>
+    <div class="set-sec">
+      <div class="set-h">${icon('sms',16)} Bank SMS tracking</div>
+      <div class="field-hint" id="smsHint">Loading…</div>
+      <div class="webhook" id="smsHook" style="display:none;"></div>
+      <button class="btn small ghost" id="smsCopy" style="display:none;">${icon('copy',14)} Copy link</button>
+    </div>
+    <div class="set-sec">
     <div class="set-h">${icon('archiveBox',16)} Backup & Restore</div>
     <div class="field-hint" style="margin-bottom:14px;">Save a restore point of all your bills, cars and appointments, or restore from a previous backup file.</div>
     <button class="btn block" id="exportBtn">${icon('download',15)} Export backup</button>
@@ -1731,7 +1822,8 @@ function openBackupSheet(){
         exportedAt: now.toISOString(),
         bills: BILLS,
         cars: CARS,
-        appts: APPTS
+        appts: APPTS,
+        expenses: EXP.items
       };
       const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
       const url = URL.createObjectURL(blob);
@@ -1770,6 +1862,7 @@ function openBackupSheet(){
         CARS = parsed.cars || [];
         CARS.forEach(c=>{ if(!c.battery) c.battery=[]; if(c.sold===undefined) c.sold=false; });
         if(Array.isArray(parsed.appts)) APPTS = parsed.appts;
+        if(Array.isArray(parsed.expenses)){ try{ await expApi('PUT', {replaceAll: parsed.expenses}); await loadExpenses(); }catch(e){ console.error('expenses restore failed', e); } }
         await storeSet('bills', BILLS);
         await storeSet('cars', CARS);
         await storeSet('appts', APPTS);
@@ -2024,7 +2117,7 @@ function openAlertsSheet(){
   document.getElementById('alertsCloseBtn').addEventListener('click', closeSheet);
 }
 /* ============ SWIPE between main pages (phone) ============ */
-const VIEW_ORDER = ['home','bills','cars','appts'];
+const VIEW_ORDER = ['home','bills','cars','appts','expenses'];
 let swipeDir = null;
 (function enableSwipe(){
   const main = document.querySelector('main');
@@ -2149,7 +2242,7 @@ async function updateNotifUI(){
   }
 }
 function bindSettingsExtras(){
-  updateInstallUI(); updateNotifUI();
+  updateInstallUI(); updateNotifUI(); updateSmsUI(); updateLockUI();
   const ib = document.getElementById('installBtn');
   if(ib) ib.addEventListener('click', async ()=>{
     if(!deferredInstall) return updateInstallUI();
@@ -2353,6 +2446,298 @@ document.getElementById('dvZoomIn').addEventListener('click', ()=> zoomDoc(0.5))
 document.getElementById('dvZoomOut').addEventListener('click', ()=> zoomDoc(-0.5));
 document.getElementById('dvShare').addEventListener('click', shareDoc);
 document.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && !document.getElementById('docViewer').hidden) closeDocViewer(); });
+
+/* ================================================================
+   EXPENSES (bank SMS)
+================================================================= */
+let EXP = {items:[], unparsed:[], offline:false, loaded:false};
+let expMonth = null;
+const EXP_ICON = {food:'utensils', groceries:'cart', fuel:'fuel', shopping:'bag', health:'heart', bills:'receipt', car:'car', other:'wallet'};
+const expCats = ()=> (globalThis.BaitSMS ? BaitSMS.CATEGORIES : [{key:'other', label:'Other', color:'#c9c0ae'}]);
+const expCat = (k)=> expCats().find(c=> c.key===k) || expCats()[expCats().length-1];
+const nice = (s)=> globalThis.BaitSMS ? BaitSMS.titleCase(s) : s;
+const monthKey = (iso)=> (iso||'').slice(0,7);
+const monthLabel = (ym)=>{ const [y,m] = ym.split('-').map(Number); return `${MONTHS_AR[MONTHS[m-1]]} ${y}`; };
+function expAmountHtml(x){
+  const sign = x.type==='refund' ? '+' : '';
+  return x.currency==='OMR' || !x.currency ? `${sign}${money(x.amount)}` : `${sign}${esc(x.currency)} ${Number(x.amount).toFixed(2)}`;
+}
+async function expApi(method, body, query, retried){
+  const opts = {method, cache:'no-store', headers:{'x-app-key':getAppKey(false)}};
+  if(body){ opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
+  const r = await fetch('/api/expenses'+(query||''), opts);
+  if(r.status===401 && !retried){ getAppKey(true); return expApi(method, body, query, true); }
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  return r.json();
+}
+async function loadExpenses(){
+  try{
+    const d = await expApi('GET');
+    EXP = {items:d.items||[], unparsed:d.unparsed||[], rules:d.rules||{}, offline:false, loaded:true};
+    try{ localStorage.setItem('baitalnoor:expenses', JSON.stringify({items:EXP.items, unparsed:EXP.unparsed, rules:EXP.rules})); }catch(e){}
+  }catch(e){
+    let c = null; try{ c = JSON.parse(localStorage.getItem('baitalnoor:expenses')||'null'); }catch(_){}
+    EXP = {items:(c&&c.items)||EXP.items||[], unparsed:(c&&c.unparsed)||[], rules:(c&&c.rules)||{}, offline:true, loaded:true};
+  }
+  renderExpenses();
+}
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible' && currentView==='expenses') loadExpenses(); });
+
+function renderExpenses(){
+  const el = document.getElementById('view-expenses');
+  if(!el) return;
+  const now = monthKey(todayISO());
+  const months = [...new Set([now, ...EXP.items.map(x=> monthKey(x.date)).filter(Boolean)])].sort().reverse();
+  if(!expMonth || !months.includes(expMonth)) expMonth = now;
+  const inMonth = (ym)=> EXP.items.filter(x=> monthKey(x.date)===ym);
+  const list = inMonth(expMonth).sort((a,b)=> (b.date+(b.time||'')).localeCompare(a.date+(a.time||'')));
+  const omr = (arr)=> arr.filter(x=> (x.currency||'OMR')==='OMR').reduce((s,x)=> s + (x.type==='refund' ? -x.amount : x.amount), 0);
+  const total = omr(list);
+  const [py, pm] = expMonth.split('-').map(Number);
+  const prevYm = pm===1 ? `${py-1}-12` : `${py}-${String(pm-1).padStart(2,'0')}`;
+  const prevTotal = omr(inMonth(prevYm));
+  let trend = '';
+  if(prevTotal > 0 && total > 0){
+    const pct = Math.round((total - prevTotal) / prevTotal * 100);
+    if(pct) trend = `<span class="kpi-trend ${pct>0?'up':'down'}">${icon(pct>0?'trendUp':'trendDown',11)} ${Math.abs(pct)}% vs ${MONTHS_AR[MONTHS[(pm+10)%12]].slice(0,3)}</span>`;
+  }
+  const foreign = {};
+  list.filter(x=> x.currency && x.currency!=='OMR').forEach(x=> foreign[x.currency] = (foreign[x.currency]||0) + (x.type==='refund' ? -x.amount : x.amount));
+  const byCat = {};
+  list.filter(x=> (x.currency||'OMR')==='OMR' && x.type!=='refund').forEach(x=> byCat[x.category] = (byCat[x.category]||0) + x.amount);
+  const cats = Object.entries(byCat).sort((a,b)=> b[1]-a[1]);
+  const maxCat = cats.length ? cats[0][1] : 1;
+  // group rows by day
+  let rows = '', lastDay = '';
+  list.forEach(x=>{
+    if(x.date !== lastDay){
+      lastDay = x.date;
+      const d = new Date(x.date+'T00:00:00');
+      const dayTotal = omr(list.filter(y=> y.date===x.date));
+      rows += `<div class="exp-day"><span>${WEEKDAYS[d.getDay()]} ${String(d.getDate()).padStart(2,'0')} ${MONTHS_AR[MONTHS[d.getMonth()]].slice(0,3)}</span><span>${money(dayTotal)}</span></div>`;
+    }
+    const c = expCat(x.category);
+    const meta = [x.time, x.card ? `Card ••${esc(x.card)}` : '', x.type==='refund' ? 'Refund' : '', x.source==='sms' ? 'SMS' : x.source==='paste' ? 'Pasted' : 'Manual', x.note ? esc(x.note) : ''].filter(Boolean).join(' · ');
+    rows += `<div class="exp-row ${x.type==='refund'?'refund':''}" data-exp="${esc(x.id)}">
+      <div class="cat-ic" style="background:${c.color}22; color:${c.color};">${icon(EXP_ICON[c.key]||'wallet',17)}</div>
+      <div class="exp-main"><div class="exp-merchant">${esc(nice(x.merchant))}</div><div class="exp-meta">${c.label} · ${meta}</div></div>
+      <div class="exp-amt">${expAmountHtml(x)}</div>
+    </div>`;
+  });
+  el.innerHTML = `
+    ${EXP.offline ? `<div class="exp-banner">Offline — showing the last saved list. New SMS will appear when you're back online.</div>` : ''}
+    <div class="year-chip-row">${months.map(m=> `<button class="year-chip ${m===expMonth?'active':''}" data-expmonth="${m}">${monthLabel(m)}</button>`).join('')}</div>
+    <div>
+      <div class="card">
+        <h3>${icon('wallet',15)} ${monthLabel(expMonth)}</h3>
+        <div class="exp-total"><div><div class="big">${money(total)}</div><div class="exp-sub">${list.length} transaction${list.length===1?'':'s'}${Object.keys(foreign).length ? ' · also '+Object.entries(foreign).map(([k,v])=> `${k} ${v.toFixed(2)}`).join(', ') : ''}</div></div>${trend}</div>
+        ${cats.length ? `<div class="exp-bars">${cats.map(([k,v])=>{ const c = expCat(k); return `
+          <div class="exp-bar"><span style="color:${c.color}; display:flex;">${icon(EXP_ICON[k]||'wallet',16)}</span>
+            <div class="lbl"><span>${c.label}</span><div class="track"><div class="fill" style="width:${Math.max(4, v/maxCat*100)}%; background:${c.color};"></div></div></div>
+            <span class="amt">${money(v)}</span></div>`; }).join('')}</div>` : ''}
+      </div>
+      <div class="btn-row" style="margin-bottom:14px;">
+        <button class="btn" id="expPasteBtn">${icon('sms',15)} Paste SMS</button>
+        <button class="btn ghost" id="expAddBtn">${icon('plus',15)} Add manually</button>
+      </div>
+      ${EXP.unparsed.length ? `<div class="card"><h3>${icon('sms',15)} Messages to review (${EXP.unparsed.length})</h3>
+        <div class="field-hint" style="margin:-4px 0 10px;">These bank messages mention OMR but weren't recognised. Add them yourself or dismiss.</div>
+        ${EXP.unparsed.map(u=> `<div class="unparsed">${esc(u.text)}<div class="btn-row"><button class="btn small" data-unadd="${esc(u.id)}">${icon('plus',13)} Add</button><button class="btn small ghost" data-undis="${esc(u.id)}">Dismiss</button></div></div>`).join('')}
+      </div>` : ''}
+    </div>
+    <div class="card">
+      <h3>${icon('receipt',15)} Transactions</h3>
+      ${rows || `<div class="empty-msg">${icon('sms',22)}${EXP.loaded ? 'No expenses this month yet' : 'Loading…'}</div>`}
+    </div>
+    <div class="fab-space"></div>
+  `;
+  el.querySelectorAll('[data-expmonth]').forEach(b=> b.addEventListener('click', ()=>{ expMonth = b.dataset.expmonth; renderExpenses(); }));
+  el.querySelectorAll('[data-exp]').forEach(r=> r.addEventListener('click', ()=> openExpenseSheet(EXP.items.find(x=> x.id===r.dataset.exp))));
+  document.getElementById('expPasteBtn').addEventListener('click', openPasteSheet);
+  document.getElementById('expAddBtn').addEventListener('click', ()=> openExpenseSheet(null));
+  el.querySelectorAll('[data-unadd]').forEach(b=> b.addEventListener('click', ()=>{
+    const u = EXP.unparsed.find(x=> x.id===b.dataset.unadd); if(!u) return;
+    const a = /\b(?:OMR|RO)\s*([\d,]+(?:\.\d+)?)/i.exec(u.text);
+    openExpenseSheet(null, {amount: a ? Number(a[1].replace(/,/g,'')) : '', note: u.text.slice(0,120), dismissUnparsed: u.id});
+  }));
+  el.querySelectorAll('[data-undis]').forEach(b=> b.addEventListener('click', async ()=>{
+    try{ await expApi('DELETE', {unparsedId: b.dataset.undis}); }catch(e){ return alert('Could not dismiss — check your connection.'); }
+    await loadExpenses();
+  }));
+}
+
+function openPasteSheet(){
+  openSheet(`
+    <h3>${icon('sms',18)} Paste bank SMS</h3>
+    <label>Message</label>
+    <textarea id="smsText" rows="5" placeholder="Card ****** used for OMR 2.900 at … on 24/10/2026 20:49:07"></textarea>
+    <div class="sms-preview" id="smsPrev">Paste a Bank Muscat message — the amount, place and date are read automatically.</div>
+    <div class="actions"><button class="btn ghost" id="smsCancel">Cancel</button><button class="btn block" id="smsAdd" disabled>Add expense</button></div>
+  `);
+  const ta = document.getElementById('smsText'), prev = document.getElementById('smsPrev'), add = document.getElementById('smsAdd');
+  const update = ()=>{
+    const r = globalThis.BaitSMS ? BaitSMS.parse(ta.value, EXP.rules||{}) : {ok:false, reason:'unrecognised'};
+    prev.className = 'sms-preview' + (ta.value.trim() ? (r.ok ? ' ok' : ' bad') : '');
+    add.disabled = !r.ok;
+    if(!ta.value.trim()) prev.textContent = 'Paste a Bank Muscat message — the amount, place and date are read automatically.';
+    else if(r.ok){ const x = r.expense; prev.innerHTML = `<b>${expAmountHtml(x)}</b> · <b>${esc(nice(x.merchant))}</b><br>${formatDMY(x.date)}${x.time? ' '+x.time:''} · ${expCat(x.category).label}`; }
+    else prev.textContent = r.reason==='secret' ? 'This looks like an OTP / security message — it is never saved.' : 'Not recognised. Use "Add manually" instead.';
+  };
+  ta.addEventListener('input', update);
+  document.getElementById('smsCancel').addEventListener('click', closeSheet);
+  add.addEventListener('click', async ()=>{
+    add.disabled = true;
+    try{
+      const r = await expApi('POST', {text: ta.value});
+      if(r.added){ closeSheet(); expMonth = monthKey(r.expense.date) || expMonth; await loadExpenses(); }
+      else { prev.className = 'sms-preview bad'; prev.textContent = r.reason==='duplicate' ? 'Already recorded — this message was added before.' : 'Not recognised.'; }
+    }catch(e){ prev.className = 'sms-preview bad'; prev.textContent = 'Could not save — check your connection.'; add.disabled = false; }
+  });
+  setTimeout(()=> ta.focus(), 50);
+}
+
+function openExpenseSheet(x, prefill){
+  const editing = !!x;
+  const cur = x || {date: todayISO(), time:'', amount:'', merchant:'', category:'other', type:'debit', note:'', currency:'OMR', ...(prefill||{})};
+  const df = (fid, v)=> `<div class="date-field"><input type="date" id="${fid}" value="${esc(v||'')}"><div class="date-display placeholder" id="${fid}Display"></div></div>`;
+  openSheet(`
+    <h3>${icon(EXP_ICON[cur.category]||'wallet',18)} ${editing ? 'Edit expense' : 'Add expense'}</h3>
+    <label>Place / description</label><input id="ex-merchant" value="${esc(editing ? nice(cur.merchant) : cur.merchant)}" placeholder="e.g. Al Faiha Kitchen">
+    <div class="row2">
+      <div><label>Amount (${(cur.currency||'OMR')==='OMR' ? rialIcon(11) : esc(cur.currency)})</label><input type="number" step="0.001" min="0" id="ex-amount" value="${esc(cur.amount)}" placeholder="0.000"></div>
+      <div><label>Type</label><select id="ex-type"><option value="debit" ${cur.type!=='refund'?'selected':''}>Expense</option><option value="refund" ${cur.type==='refund'?'selected':''}>Refund</option></select></div>
+    </div>
+    <div class="row2">
+      <div><label>Date</label>${df('ex-date', cur.date)}</div>
+      <div><label>Time</label><input type="time" id="ex-time" value="${esc(cur.time||'')}"></div>
+    </div>
+    <label>Category</label><select id="ex-cat">${expCats().map(c=> `<option value="${c.key}" ${cur.category===c.key?'selected':''}>${c.label}</option>`).join('')}</select>
+    <label>Note</label><input id="ex-note" value="${esc(cur.note||'')}" placeholder="Optional">
+    ${editing && x.raw ? `<div class="field-hint" style="margin-top:10px;">${icon('sms',12)} ${esc(x.raw)}</div>` : ''}
+    <div class="field-hint" id="ex-hint">${editing ? 'Saves automatically. Changing the category also applies to future purchases at this place.' : 'Fill in the amount and date — it saves automatically.'}</div>
+    <div class="actions">${editing ? `<button class="btn danger" id="exDel">Delete</button>` : ''}<button class="btn block" id="exDone">Done</button></div>
+  `);
+  syncDateDisplay('ex-date');
+  const v = (i)=> (document.getElementById(i)||{}).value || '';
+  let id = editing ? x.id : null, busy = Promise.resolve(), dirty = false;
+  const data = ()=> ({merchant:v('ex-merchant').trim(), amount:Number(v('ex-amount')), type:v('ex-type'), date:v('ex-date'), time:v('ex-time'), category:v('ex-cat'), note:v('ex-note').trim()});
+  const hint = (t)=>{ const e = document.getElementById('ex-hint'); if(e) e.textContent = t; };
+  function persist(){
+    const d = data();
+    if(!(d.amount > 0) || !d.date) return busy;
+    busy = busy.then(async ()=>{
+      try{
+        if(!id){ const r = await expApi('POST', {item:d, dismissUnparsed: prefill && prefill.dismissUnparsed}); id = r.item.id; EXP.items.push(r.item); }
+        else{
+          const before = EXP.items.find(y=> y.id===id) || {};
+          const patch = {...d}; if(patch.category === before.category) delete patch.category;
+          const r = await expApi('PUT', {id, patch}); const i = EXP.items.findIndex(y=> y.id===id); if(i>-1) EXP.items[i] = r.item;
+          if(r.changedOthers) hint(`Saved ✓ — also updated ${r.changedOthers} other purchase${r.changedOthers>1?'s':''} at this place.`); else hint('Saved ✓');
+        }
+        dirty = true;
+      }catch(e){ hint('Could not save — check your connection.'); }
+    });
+    return busy;
+  }
+  const deb = debounce(persist, 600);
+  ['ex-merchant','ex-amount','ex-note','ex-time'].forEach(i=> document.getElementById(i).addEventListener('input', deb));
+  ['ex-type','ex-cat'].forEach(i=> document.getElementById(i).addEventListener('change', persist));
+  document.getElementById('ex-date').addEventListener('change', ()=>{ syncDateDisplay('ex-date'); persist(); });
+  activeFlush = ()=>{ persist().then(()=>{ if(dirty) loadExpenses(); }); };
+  document.getElementById('exDone').addEventListener('click', closeSheet);
+  const del = document.getElementById('exDel');
+  if(del) del.addEventListener('click', async ()=>{
+    if(!confirm('Delete this expense?')) return;
+    activeFlush = null;
+    try{ await expApi('DELETE', {id}); }catch(e){ return hint('Could not delete — check your connection.'); }
+    closeSheet(); loadExpenses();
+  });
+}
+
+async function updateSmsUI(){
+  const h = document.getElementById('smsHint'), hook = document.getElementById('smsHook'), copy = document.getElementById('smsCopy');
+  if(!h) return;
+  try{
+    const d = await expApi('GET', null, '?setup=1');
+    if(!d.webhook){ h.textContent = 'Not set up on the server yet.'; return; }
+    h.innerHTML = 'Your phone sends each Bank Muscat SMS to this private link (set up once in <b>MacroDroid</b>). Keep it private.';
+    hook.textContent = d.webhook; hook.style.display = ''; copy.style.display = '';
+    copy.onclick = async ()=>{ try{ await navigator.clipboard.writeText(d.webhook); copy.innerHTML = `${icon('copy',14)} Copied ✓`; }catch(e){ const r = document.createRange(); r.selectNodeContents(hook); const s = getSelection(); s.removeAllRanges(); s.addRange(r); } };
+  }catch(e){ h.textContent = 'Could not load — check your connection.'; }
+}
+
+/* ============ APP LOCK (fingerprint / face via the phone) ============
+   Uses Web Authentication with the phone's built-in screen lock. Nothing biometric
+   ever leaves the phone; the app only stores an ID for the key the phone created. */
+const LOCK_KEY = 'baitalnoor:lock', RELOCK_MS = 60*1000;
+const b64u = (buf)=> btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+const unb64u = (s)=> Uint8Array.from(atob(s.replace(/-/g,'+').replace(/_/g,'/') + '==='.slice((s.length+3)%4)), c=> c.charCodeAt(0));
+const rnd = (n)=> crypto.getRandomValues(new Uint8Array(n));
+function lockCfg(){ try{ return JSON.parse(localStorage.getItem(LOCK_KEY)||'null'); }catch(e){ return null; } }
+async function lockSupported(){
+  try{ return !!(window.PublicKeyCredential && await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()); }catch(e){ return false; }
+}
+let lockBusy = null, hiddenAt = 0;
+function setLockMsg(t, err){ const m = document.getElementById('lockMsg'); if(m){ m.textContent = t; m.classList.toggle('err', !!err); } }
+function showLock(){ if(lockCfg()) document.documentElement.classList.add('locked'); }
+function hideLock(){ document.documentElement.classList.remove('locked'); setLockMsg('Tap to unlock'); const r = document.getElementById('lockKeyRow'); if(r) r.classList.remove('show'); }
+async function tryUnlock(){
+  const cfg = lockCfg(); if(!cfg){ return hideLock(); }
+  if(lockBusy){ try{ lockBusy.abort(); }catch(e){} }
+  const ctl = new AbortController(); lockBusy = ctl; setLockMsg('Waiting for fingerprint / face…');
+  try{
+    const a = await navigator.credentials.get({ signal: ctl.signal, publicKey:{ challenge: rnd(32), rpId: location.hostname, timeout: 60000, userVerification:'required',
+      allowCredentials:[{ type:'public-key', id: unb64u(cfg.id), transports:['internal','hybrid'] }] } });
+    const flags = new Uint8Array(a.response.authenticatorData)[32];
+    if(a && b64u(a.rawId) === cfg.id && (flags & 0x04)) hideLock();   // 0x04 = user verified
+    else setLockMsg('Not verified — try again.', true);
+  }catch(e){
+    if(ctl.signal.aborted) return;                        // replaced by a newer tap
+    setLockMsg(e && e.name==='NotAllowedError' ? 'Not recognised or cancelled — tap to try again.' : 'Could not use the fingerprint — tap to try again.', true);
+  }
+  finally{ if(lockBusy === ctl) lockBusy = null; }
+}
+(function bindLock(){
+  const fp = document.getElementById('lockFp'); if(fp) fp.addEventListener('click', tryUnlock);
+  const alt = document.getElementById('lockAltBtn'), row = document.getElementById('lockKeyRow'), inp = document.getElementById('lockKeyInput');
+  if(alt) alt.addEventListener('click', ()=>{ row.classList.toggle('show'); if(row.classList.contains('show')) inp.focus(); });
+  const go = ()=>{
+    const saved = localStorage.getItem('baitalnoor:appkey') || '';
+    if(saved && inp.value === saved){ inp.value = ''; hideLock(); } else { setLockMsg('Wrong key.', true); inp.select(); }
+  };
+  const kb = document.getElementById('lockKeyBtn'); if(kb) kb.addEventListener('click', go);
+  if(inp) inp.addEventListener('keydown', e=>{ if(e.key==='Enter') go(); });
+  document.addEventListener('visibilitychange', ()=>{
+    if(document.hidden){ hiddenAt = Date.now(); return; }
+    if(lockCfg() && hiddenAt && Date.now() - hiddenAt > RELOCK_MS){ showLock(); tryUnlock(); }
+  });
+  if(document.documentElement.classList.contains('locked')) setTimeout(tryUnlock, 250);
+})();
+async function updateLockUI(){
+  const h = document.getElementById('lockHint'), b = document.getElementById('lockBtn'), badge = document.getElementById('lockBadge');
+  if(!h) return;
+  const on = !!lockCfg();
+  badge.style.display = on ? '' : 'none';
+  if(!on && !(await lockSupported())){ h.textContent = 'This device or browser has no fingerprint / face unlock available.'; b.style.display = 'none'; return; }
+  h.innerHTML = on ? 'The app asks for your fingerprint or face when it opens, and again after 1 minute in the background. Set separately on each device.'
+                   : 'Open the app with the fingerprint or face already saved on this phone. Nothing biometric leaves the phone.';
+  b.style.display = ''; b.className = on ? 'btn ghost' : 'btn';
+  b.innerHTML = on ? 'Turn off' : `${icon('fingerprint',15)} Turn on`;
+  b.onclick = on ? ()=>{ if(confirm('Turn off the app lock on this device?')){ localStorage.removeItem(LOCK_KEY); updateLockUI(); } } : enableLock;
+}
+async function enableLock(){
+  const h = document.getElementById('lockHint');
+  try{
+    const c = await navigator.credentials.create({ publicKey:{
+      challenge: rnd(32), rp:{ name:'Bait Al Noor', id: location.hostname },
+      user:{ id: rnd(16), name:'bait-al-noor', displayName:'Bait Al Noor' },
+      pubKeyCredParams:[{type:'public-key', alg:-7},{type:'public-key', alg:-257}],
+      authenticatorSelection:{ authenticatorAttachment:'platform', userVerification:'required', residentKey:'discouraged' },
+      timeout: 60000, attestation:'none' } });
+    localStorage.setItem(LOCK_KEY, JSON.stringify({ id: b64u(c.rawId), at: new Date().toISOString() }));
+    updateLockUI();
+  }catch(e){ if(h) h.textContent = e && e.name==='NotAllowedError' ? 'Cancelled — nothing changed.' : 'Could not turn on: ' + (e && e.message || e); }
+}
 
 init();
 </script>

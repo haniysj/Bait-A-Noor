@@ -1,7 +1,7 @@
 /* Bait Al Noor service worker: installable app, offline fallback, phone notifications.
    Network-first, so the latest version always loads when online. */
-const CACHE = 'bait-alnoor-v1';
-const SHELL = ['/', '/alerts.js', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png'];
+const CACHE = 'bait-alnoor-v3';
+const SHELL = ['/', '/alerts.js', '/sms.js', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png'];
 
 self.addEventListener('install', (e) => {
   self.skipWaiting();
